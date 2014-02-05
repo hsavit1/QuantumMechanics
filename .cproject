@@ -17,6 +17,13 @@
 							<targetPlatform archList="x86_64" binaryParser="org.eclipse.cdt.core.ELF" id="intel.platform.linux.x86_64.exe.rel_14.0.0.527148709" name="Platform.Executable.Release" osList="linux" superClass="intel.platform.linux.x86_64.exe.rel_14.0.0"/>
 							<builder buildPath="${workspace_loc:/QuantumMechanics}/Release" id="intel.builder.linux.x86_64.exe.rel.573079665_14.0.0" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Intel Builder" superClass="intel.builder.linux.x86_64.exe.rel_14.0.0"/>
 							<tool id="intel.cpp.compilestep.linux.x86_64.exe.rel.1026350810_14.0.0" name="Intel Intel(R) 64 C++ Compiler " superClass="intel.cpp.compilestep.linux.x86_64.exe.rel_14.0.0">
+								<option id="intel.compilestep.optimization.parallel.1350465315" name="Parallelization (-parallel)" superClass="intel.compilestep.optimization.parallel" value="false" valueType="boolean"/>
+								<option id="intel.compilestep.preprocessor.defsym.1621713234" name="Preprocessor Definitions (-D)" superClass="intel.compilestep.preprocessor.defsym" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="EIGEN_USE_MKL_ALL"/>
+								</option>
+								<option id="intel.compilestep.preprocessor.includedirectories.395615567" superClass="intel.compilestep.preprocessor.includedirectories" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/local/include/eigen3"/>
+								</option>
 								<inputType id="intel.cpp.compilestep.input.27771112" superClass="intel.cpp.compilestep.input"/>
 							</tool>
 							<tool id="intel.c.compilestep.linux.x86_64.exe.rel.1873668585_14.0.0" name="Intel Intel(R) 64 C Compiler" superClass="intel.c.compilestep.linux.x86_64.exe.rel_14.0.0">
@@ -81,9 +88,16 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="QuantumMechanics.intel.linux.executable.2.1072243284" name="Executable" projectType="intel.linux.executable.2"/>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.pathentry"/>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="intel.linux.x86_64.exe.rel.1755653513_14.0.0;intel.linux.x86_64.exe.rel.1755653513._14.0.0;intel.cpp.compilestep.linux.x86_64.exe.rel.1026350810_14.0.0;intel.cpp.compilestep.input.27771112">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.intel.compiler.cdt.managedbuilder.ui.ICCManagedMakePerProjectProfile"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="intel.linux.x86_64.exe.rel.1755653513_14.0.0;intel.linux.x86_64.exe.rel.1755653513._14.0.0;intel.c.compilestep.linux.x86_64.exe.rel.1873668585_14.0.0;intel.c.compilestep.input.1223192189">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.intel.compiler.cdt.managedbuilder.ui.ICCManagedMakePerProjectProfile"/>
+		</scannerConfigBuildInfo>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
