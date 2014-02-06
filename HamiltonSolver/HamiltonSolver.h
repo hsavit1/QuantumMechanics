@@ -8,8 +8,10 @@
 #ifndef HAMILTONSOLVER_H_
 #define HAMILTONSOLVER_H_
 
-#include <Eigen/Dense>
+#include <iostream>
 #include <functional>
+#include <Eigen/Dense>
+
 
 namespace QuantumMechanics {
 
@@ -17,8 +19,11 @@ using namespace Eigen;
 
 class HamiltonSolver {
 public:
-	HamiltonSolver();
+	HamiltonSolver(std::function<MatrixXcd(int)> H = nullptr);
 	virtual ~HamiltonSolver();
+
+private:
+	std::function<MatrixXcd(int)> hamilton;
 };
 
 } /* namespace QuantumMechanics */

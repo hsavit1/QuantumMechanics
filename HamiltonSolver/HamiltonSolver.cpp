@@ -7,11 +7,14 @@
 
 #include "HamiltonSolver.h"
 
+using namespace Eigen;
+
 namespace QuantumMechanics {
 
-HamiltonSolver::HamiltonSolver() {
+HamiltonSolver::HamiltonSolver(std::function<MatrixXcd(int)> H) {
 	// TODO Auto-generated constructor stub
-
+	if(H == nullptr)
+		return;
 }
 
 HamiltonSolver::~HamiltonSolver() {
