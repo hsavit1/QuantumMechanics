@@ -1,11 +1,11 @@
 /*
- * HamiltonSolver_test.cpp
+ * EigenSystem_test.cpp
  *
  *  Created on: 05/02/2014
  *      Author: gregersen
  */
 
-#include "HamiltonSolver.h"
+#include "EigenSystem.h"
 
 int main(int argc, char **argv) {
 

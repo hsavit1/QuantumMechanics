@@ -46,8 +46,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="HamiltonSolver" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="HamiltonSolver"/>
+						<entry excluding="EigenSystem" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="EigenSystem"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -78,7 +78,7 @@
 								</option>
 								<option id="intel.compilestep.perflibs.mkl.1835278799" name="Use Intel(R) Math Kernel Library (-mkl=[arg])" superClass="intel.compilestep.perflibs.mkl" value="perflibs.mkl.parallel" valueType="enumerated"/>
 								<option id="intel.compilestep.debug.parallel.2065350901" name="Enable Parallel Debug Checks (-debug parallel)" superClass="intel.compilestep.debug.parallel" value="true" valueType="boolean"/>
-								<option id="intel.compilestep.comline.offloadcopts.1350949854" name="Additional Options for MIC Offload Compiler (-offload-option,mic,compiler,&lt;val&gt;)" superClass="intel.compilestep.comline.offloadcopts" valueType="stringList"/>
+								<option id="intel.compilestep.comline.offloadcopts.1350949854" name="Additional Options for MIC Offload Compiler (-offload-option,mic,compiler,&lt;val&gt;)" superClass="intel.compilestep.comline.offloadcopts"/>
 								<option id="intel.compilestep.coptions.752637275" name="Additional Options" superClass="intel.compilestep.coptions" value="-std=c++11" valueType="string"/>
 								<inputType id="intel.cpp.compilestep.input.678765515" superClass="intel.cpp.compilestep.input"/>
 							</tool>
@@ -102,8 +102,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="HamiltonSolver" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="HamiltonSolver"/>
+						<entry excluding="EigenSystem" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="EigenSystem"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
