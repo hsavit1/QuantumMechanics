@@ -12,3 +12,6 @@
 *.la
 *.a
 /Debug
+/.cproject
+/.project
+/.settings
