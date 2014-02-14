@@ -14,9 +14,8 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-
 /*
  *
-namespace QuantumMechanics {
+ namespace QuantumMechanics {
 
-} /* namespace QuantumMechanics */
+ } /* namespace QuantumMechanics */
