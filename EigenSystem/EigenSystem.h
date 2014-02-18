@@ -123,7 +123,7 @@ public:
 	ArrayXXd eigenvalues(EigenSystem::range range =
 			EigenSystem::range::full()) const;
 
-	static ArrayXd eigenvalues(const MatrixXcd &M, EigenSystem::range range =
+	static ArrayXd eigenvalues(MatrixXcd M, EigenSystem::range range =
 			EigenSystem::range::full());
 
 private:
