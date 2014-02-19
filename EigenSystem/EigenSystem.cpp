@@ -57,48 +57,50 @@ ArrayXXd HermitianEigenSolver::eigenvalues(EigenSystem::range range) const {
 	ArrayXXd values(order, points);
 
 	for (size_t p_index = 0; p_index < points; p_index++) {
-		MatrixXcd M =
-				(M_array) ?
-						M_array[p_index] :
-						((M_function) ? M_function(p_index) : MatrixXcd());
+		MatrixXcd M = (M_array) ? M_array[p_index] :
+					((M_function) ? M_function(p_index) : MatrixXcd());
 
-		if (M.rows() < order || M.cols() < order) {
+		if (M.rows() < order || M.cols() < order)
+		{
 			values.col(p_index).fill(nan(0));
 			continue;
 		}
 
+		// Problem dimensions:
 		const lapack_int major_dim_order =
 				(M.IsRowMajor) ? LAPACK_ROW_MAJOR : LAPACK_COL_MAJOR;
 		const lapack_int major_dim_length =
 				(M.IsRowMajor) ? M.rows() : M.cols();
 		lapack_int value_count = 0;
-		lapack_int* suppliements = new lapack_int[2 * order];
+
+		// Additional eigenvector dimensions:
+		MKL_Complex16* vectors = nullptr;
+		lapack_int lead_dim_vectors = 1; // must be >= 1, or an error occurs. Only used for vector calculation.
+		lapack_int* vectors_suppliements = nullptr;
 
 		lapack_int info = LAPACKE_zheevr(
-											major_dim_order,
-											job_token,
-											range_token,
-											upper_lower_token,
-											order,
-											M.data(),
-											major_dim_length,
-											range.lowest_value,
-											range.highest_value,
-											range.begin_index,
-											range.end_index,
-											0.,
-											&value_count,
-											values.data() + p_index * order,
-											nullptr,
-											0,
-											suppliements
+											major_dim_order,				// param. 0
+											job_token,						// param. 1
+											range_token,					// param. 2
+											upper_lower_token,				// param. 3
+											order,							// param. 4
+											M.data(),						// param. 5
+											major_dim_length,				// param. 6
+											range.lowest_value,				// param. 7
+											range.highest_value,			// param. 8
+											range.begin_index,				// param. 9
+											range.end_index,				// param. 10
+											0.,								// param. 11
+											&value_count,					// param. 12
+											values.data() + p_index * order,// param. 13
+											vectors,						// param. 14
+											lead_dim_vectors,				// param. 15
+											vectors_suppliements			// param. 16
 										);
 
 		if (info != 0) {
 			values.col(p_index).fill(nan(0));
 		}
-
-		delete[] suppliements;
 	}
 
 	return values;
@@ -123,36 +125,39 @@ ArrayXd HermitianEigenSolver::eigenvalues(MatrixXcd M, EigenSystem::range range)
 	const char job_token = 'N'; // Normal (only eigenvalues).
 	const char upper_lower_token = 'U';
 
+	// Problem dimensions:
 	const lapack_int major_dim_order = (M.IsRowMajor) ? LAPACK_ROW_MAJOR : LAPACK_COL_MAJOR;
 	const lapack_int major_dim_length = (M.IsRowMajor) ? M.rows() : M.cols();
 	lapack_int value_count = 0;
-	lapack_int* suppliements = new lapack_int[2 * order];
+
+	// Additional eigenvector dimensions:
+	MKL_Complex16* vectors = nullptr;
+	lapack_int lead_dim_vectors = 1; // must be >= 1, or an error occurs. Only used for vector calculation.
+	lapack_int* vectors_suppliements = nullptr;
 
 	lapack_int info = LAPACKE_zheevr(
-										major_dim_order,
-										job_token,
-										range_token,
-										upper_lower_token,
-										order,
-										M.data(),
-										major_dim_length,
-										range.lowest_value,
-										range.highest_value,
-										range.begin_index,
-										range.end_index,
-										0.,
-										&value_count,
-										values.data(),
-										nullptr,
-										0,
-										suppliements
+										major_dim_order,	// param. 0
+										job_token,			// param. 1
+										range_token,		// param. 2
+										upper_lower_token,	// param. 3
+										order,				// param. 4
+										M.data(),			// param. 5
+										major_dim_length,	// param. 6
+										range.lowest_value,	// param. 7
+										range.highest_value,// param. 8
+										range.begin_index,	// param. 9
+										range.end_index,	// param. 10
+										0.,					// param. 11
+										&value_count,		// param. 12
+										values.data(),		// param. 13
+										vectors,			// param. 14
+										lead_dim_vectors,	// param. 15
+										vectors_suppliements// param. 16
 									);
 
 	if (info != 0) {
 		values.fill(nan(0));
 	}
-
-	delete[] suppliements;
 
 	return values;
 }
