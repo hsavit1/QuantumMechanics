@@ -151,10 +151,10 @@ public:
 
 	void compute(compute_action action, range compute_range = range::full());
 
-	ArrayXXd eigenvalues();
-	ArrayXXd eigenvalues(range compute_range);
+	MatrixXd eigenvalues();
+	MatrixXd eigenvalues(range compute_range);
 
-	static ArrayXd eigenvalues(const MatrixXcd &M, range compute_range = range::full());
+	static VectorXd eigenvalues(const MatrixXcd &M, range compute_range = range::full());
 
 	std::vector<MatrixXcd> eigenvectors();
 	std::vector<MatrixXcd> eigenvectors(range compute_range);
@@ -170,7 +170,7 @@ private:
 	const std::function<MatrixXcd(int)> matrices_function;
 
 	range computed_range;
-	ArrayXXd computed_eigenvalues;
+	MatrixXd computed_eigenvalues;
 	std::vector<MatrixXcd> computed_eigenvectors;
 };
 

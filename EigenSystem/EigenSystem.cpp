@@ -71,7 +71,7 @@ void HermitianSolver::compute(compute_action action, range compute_range)
 	}
 }
 
-ArrayXXd HermitianSolver::eigenvalues()
+MatrixXd HermitianSolver::eigenvalues()
 {
 	if(computed_eigenvalues.size() == 0)
 	{
@@ -81,7 +81,7 @@ ArrayXXd HermitianSolver::eigenvalues()
 	return computed_eigenvalues;
 }
 
-ArrayXXd HermitianSolver::eigenvalues(range compute_range)
+MatrixXd HermitianSolver::eigenvalues(range compute_range)
 {
 	if(computed_eigenvalues.size() == 0 || computed_range != compute_range)
 	{
@@ -92,7 +92,7 @@ ArrayXXd HermitianSolver::eigenvalues(range compute_range)
 	return computed_eigenvalues;
 }
 
-ArrayXd HermitianSolver::eigenvalues(const MatrixXcd &M, range compute_range)
+VectorXd HermitianSolver::eigenvalues(const MatrixXcd &M, range compute_range)
 {
 	return HermitianSolver(M).eigenvalues(compute_range);
 }
@@ -130,7 +130,7 @@ void HermitianSolver::compute_eigenvalues() {
 	const char job_token = 'N'; // Normal (only eigenvalues).
 	const char upper_lower_token = 'U';
 
-	ArrayXXd &values = computed_eigenvalues;
+	MatrixXd &values = computed_eigenvalues;
 	values.resize(matrices_size, matrices_count);
 
 	for (size_t m_index = 0; m_index < matrices_count; m_index++) {
@@ -193,7 +193,7 @@ void HermitianSolver::compute_eigenvectors() {
 	const char upper_lower_token = 'U';
 
 
-	ArrayXXd &values = computed_eigenvalues;
+	MatrixXd &values = computed_eigenvalues;
 	std::vector<MatrixXcd> &eigenvectors = computed_eigenvectors;
 
 	lapack_int lead_dim_vectors = (range_token == 'I') ? computed_range.end_index - computed_range.begin_index + 1 : matrices_size;
