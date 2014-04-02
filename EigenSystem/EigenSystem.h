@@ -88,50 +88,93 @@ struct range {
 		return range(value_range, lowest, highest);
 	}
 
-	void fit_indices_to_order(const size_t &order) {
+	inline void fit_indices_to_size(const size_t &size) {
 		if (value == full_range || value == value_range)
 			return;
 
 		if (value == mid_index_range) {
-			begin_index += order / 2;
-			end_index += order / 2;
+			begin_index += size / 2;
+			end_index += size / 2;
 			value == index_range;
 		}
 
 		while (value == index_range && begin_index < 0)
-			begin_index += order;
+			begin_index += size;
 
 		while (value == index_range && end_index < 0)
-			end_index += order;
+			end_index += size;
+	}
+
+	inline bool operator==(const range &other) {
+		if(value != other.value)
+			return false;
+
+		if(value == full_range)
+			return true;
+		else if(value == index_range || value == mid_index_range)
+		{
+			if(begin_index == other.begin_index && end_index == other.end_index)
+				return false;
+			else
+				return true;
+		}
+		else if(value == value_range)
+		{
+			if(lowest_value == other.lowest_value && highest_value == other.highest_value)
+				return false;
+			else
+				return true;
+		}
+
+		return false;
+	}
+
+
+	inline bool operator!=(const range &other) {
+		return !( (*this) == other );
 	}
 };
 
-}
-;
-/* namespace EigenSystem */
-
-class HermitianEigenSolver {
+class HermitianSolver {
 public:
-	HermitianEigenSolver();
-	HermitianEigenSolver(size_t n, MatrixXcd * const M);
-	HermitianEigenSolver(size_t n, MatrixXcd * const M, const size_t &order);
-	HermitianEigenSolver(size_t n, const std::function<MatrixXcd(int)> &M,
-			const size_t &order);
-	HermitianEigenSolver(const std::vector<MatrixXcd> &M);
-	virtual ~HermitianEigenSolver();
+	HermitianSolver();
+	HermitianSolver(const MatrixXcd &M);
+	HermitianSolver(size_t n, MatrixXcd * const M);
+	HermitianSolver(size_t n, MatrixXcd * const M, const size_t &size);
+	HermitianSolver(size_t n, const std::function<MatrixXcd(int)> &M, const size_t &size);
+	virtual ~HermitianSolver();
 
-	ArrayXXd eigenvalues(EigenSystem::range range =
-			EigenSystem::range::full()) const;
+	enum compute_action {
+		EigenvaluesOnly,
+		EigenvaluesAndVectors
+	};
 
-	static ArrayXd eigenvalues(MatrixXcd M, EigenSystem::range range =
-			EigenSystem::range::full());
+	void compute(compute_action action, range compute_range = range::full());
+
+	MatrixXd eigenvalues();
+	MatrixXd eigenvalues(range compute_range);
+
+	static VectorXd eigenvalues(const MatrixXcd &M, range compute_range = range::full());
+
+	std::vector<MatrixXcd> eigenvectors();
+	std::vector<MatrixXcd> eigenvectors(range compute_range);
+
+protected:
+	void compute_eigenvalues();
+	void compute_eigenvectors();
 
 private:
-	const size_t points;
-	const size_t order;
-	MatrixXcd * const M_array;
-	const std::function<MatrixXcd(int)> M_function;
+	const size_t matrices_count;
+	const size_t matrices_size;
+	const MatrixXcd * const matrices_array;
+	const std::function<MatrixXcd(int)> matrices_function;
+
+	range computed_range;
+	MatrixXd computed_eigenvalues;
+	std::vector<MatrixXcd> computed_eigenvectors;
 };
+
+} /* namespace EigenSystem */
 
 } /* namespace QuantumMechanics */
 
