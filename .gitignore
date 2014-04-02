@@ -1,5 +1,4 @@
 <<<<<<< HEAD
-/.kateproject
 =======
 # Compiled Object files
 *.slo
@@ -14,6 +13,8 @@
 *.lai
 *.la
 *.a
+/.kateproject
+/.kateproject.d
 /Debug
 /.cproject
 /.project
