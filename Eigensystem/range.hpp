@@ -65,7 +65,7 @@ struct range {
 	}
 
 	static range highest(long count) {
-		return range(index_range, -1, -count);
+		return range(index_range, -count, -1);
 	}
 
 	static range middle(long count) {
@@ -87,7 +87,7 @@ struct range {
 		if (type_value == mid_index_range) {
 			begin_index += size / 2;
 			end_index += size / 2;
-			type_value == index_range;
+			type_value = index_range;
 		}
 
 		while (type_value == index_range && begin_index < 0)
@@ -97,7 +97,7 @@ struct range {
 			end_index += size;
 	}
 
-	inline bool operator==(const range &other) {
+	inline bool operator==(const range &other) const {
 		if(type_value != other.type_value)
 			return false;
 
@@ -106,23 +106,23 @@ struct range {
 		else if(type_value == index_range || type_value == mid_index_range)
 		{
 			if(begin_index == other.begin_index && end_index == other.end_index)
-				return false;
-			else
 				return true;
+			else
+				return false;
 		}
 		else if(type_value == value_range)
 		{
 			if(lowest_value == other.lowest_value && highest_value == other.highest_value)
-				return false;
-			else
 				return true;
+			else
+				return false;
 		}
 
 		return false;
 	}
 
 
-	inline bool operator!=(const range &other) {
+	inline bool operator!=(const range &other) const {
 		return !( (*this) == other );
 	}
 };
