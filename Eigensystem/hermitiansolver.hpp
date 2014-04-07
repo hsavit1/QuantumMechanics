@@ -17,7 +17,7 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 #include <functional>
 #include <vector>
 
-#include <Math/Dense> 	// Includes math in namespace Eigen.
+#include <Math/Eigen/Dense> 	// Includes math in namespace Eigen.
 using namespace Eigen; 	// Escaping namespace Eigen!
 
 #include <mkl.h>	// Includes lapack.

@@ -78,26 +78,22 @@ static inline void assign_conj_scalar_eig2mkl(MKLType& mklScalar, const EigenTyp
 
 template <>
 inline void assign_scalar_eig2mkl<MKL_Complex16,dcomplex>(MKL_Complex16& mklScalar, const dcomplex& eigenScalar) {
-  mklScalar.real=eigenScalar.real();
-  mklScalar.imag=eigenScalar.imag();
+  mklScalar=eigenScalar
 }
 
 template <>
 inline void assign_scalar_eig2mkl<MKL_Complex8,scomplex>(MKL_Complex8& mklScalar, const scomplex& eigenScalar) {
-  mklScalar.real=eigenScalar.real();
-  mklScalar.imag=eigenScalar.imag();
+  mklScalar=eigenScalar;
 }
 
 template <>
 inline void assign_conj_scalar_eig2mkl<MKL_Complex16,dcomplex>(MKL_Complex16& mklScalar, const dcomplex& eigenScalar) {
-  mklScalar.real=eigenScalar.real();
-  mklScalar.imag=-eigenScalar.imag();
+  mklScalar=eigenScalar;
 }
 
 template <>
 inline void assign_conj_scalar_eig2mkl<MKL_Complex8,scomplex>(MKL_Complex8& mklScalar, const scomplex& eigenScalar) {
-  mklScalar.real=eigenScalar.real();
-  mklScalar.imag=-eigenScalar.imag();
+  mklScalar=eigenScalar;
 }
 
 } // end namespace internal
