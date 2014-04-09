@@ -14,9 +14,12 @@
 *.la
 *.a
 /.kateproject
+<<<<<<< Updated upstream
 /.kateproject.d
 /Debug
 /.cproject
 /.project
 /.settings
+=======
+>>>>>>> Stashed changes
 >>>>>>> 4177da03b7c864adb1c125e1de5176a1d242ddac
