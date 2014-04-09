@@ -21,6 +21,7 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 using namespace Eigen; 	// Escaping namespace Eigen!
 
 #include <mkl.h>	// Includes lapack.
+#include <tbb/mutex.h>	// Includes lapack.
 
 #include "range.hpp" 	// Includes the custom struct range.
 
@@ -41,6 +42,8 @@ private:
 	range computed_range;
 	MatrixXd computed_eigenvalues;
 	std::vector<MatrixXcd> computed_eigenvectors;
+	
+	std::function<void(double)> progress_function;
 
 public:
 	HermitianSolver() :
@@ -49,7 +52,8 @@ public:
 		matrices_array(nullptr),
 		matrices_vector(nullptr),
 		matrices_function(nullptr),
-		computed_range(range::full()) 
+		computed_range(range::full()),
+		progress_function(nullptr)
 		{ }
 
 	HermitianSolver(const MatrixXcd &M) :
@@ -58,7 +62,8 @@ public:
 		matrices_array(&M),
 		matrices_vector(nullptr),
 		matrices_function(nullptr),
-		computed_range(range::full())
+		computed_range(range::full()),
+		progress_function(nullptr)
 		{ }
 
 	HermitianSolver(size_t n, const MatrixXcd * const M) :
@@ -67,7 +72,8 @@ public:
 		matrices_array(M),
 		matrices_vector(nullptr),
 		matrices_function(nullptr),
-		computed_range(range::full())
+		computed_range(range::full()),
+		progress_function(nullptr)
 		{ }
 
 	HermitianSolver(size_t n, const MatrixXcd * const M, const size_t &size) :
@@ -76,7 +82,8 @@ public:
 		matrices_array(M),
 		matrices_vector(nullptr),
 		matrices_function(nullptr),
-		computed_range(range::full())
+		computed_range(range::full()),
+		progress_function(nullptr)
 		{ }
 
 	HermitianSolver(size_t n, const std::vector<MatrixXcd> &M) :
@@ -85,7 +92,8 @@ public:
 		matrices_array(nullptr),
 		matrices_vector(&M),
 		matrices_function(nullptr),
-		computed_range(range::full())
+		computed_range(range::full()),
+		progress_function(nullptr)
 		{ }
 
 	HermitianSolver(size_t n, const std::vector<MatrixXcd> &M, const size_t &size) :
@@ -94,7 +102,8 @@ public:
 		matrices_array(nullptr),
 		matrices_vector(&M),
 		matrices_function(nullptr),
-		computed_range(range::full())
+		computed_range(range::full()),
+		progress_function(nullptr)
 		{ }
 
 	HermitianSolver(size_t n, const std::function<MatrixXcd(int)> &M, const size_t &size) :
@@ -103,14 +112,20 @@ public:
 		matrices_array(nullptr),
 		matrices_vector(nullptr),
 		matrices_function(M),
-		computed_range(range::full())
+		computed_range(range::full()),
+		progress_function(nullptr)
 		{ }
 
 	virtual ~HermitianSolver() { }
-
-protected:
+	
 	// TODO: to disable all log from these elements set this to false.	
 	static bool logging_enabled;
+	
+	void enableProgressFeedback(std::function<void(double)> feedback_function) {
+		progress_function = feedback_function;
+	}
+
+protected:
 	static std::ostream null_stream;
 	
 	std::ostream & log() 
@@ -172,8 +187,15 @@ protected:
 			logAppend() << " value range " << computed_range.lowest_value << " to " << computed_range.highest_value << "." << std::endl;
 		
 		lapack_int value_count_max = 0;
+		
+		const double progress_step((progress_function) ? 1. / double(matrices_count) : 0.);
+		double current_progress(0.);
+		tbb::mutex progress_mutex; 
+		
+		if(progress_function)
+			progress_function(current_progress);
 
-		for (size_t m_index = 0; m_index < matrices_count; m_index++) {
+		_Cilk_for (size_t m_index = 0; m_index < matrices_count; m_index++) {
 
 			MatrixXcd M = (matrices_array) ? ((matrices_count == 1) ? *matrices_array : matrices_array[m_index]) :
 						((matrices_vector) ? (*matrices_vector)[m_index] : 
@@ -223,8 +245,19 @@ protected:
 			}
 			else if (value_count_max < value_count)
 				value_count_max = value_count;
+			
+			if(progress_function)
+			{
+				progress_mutex.lock();
+				current_progress += progress_step;
+				progress_function(current_progress);
+				progress_mutex.unlock();
+			}
 		}
 		
+		if(progress_function && current_progress < 1.)
+			progress_function(1.);
+			
 		log() << "Done computing eigenvalues." << std::endl;
 		
 		
@@ -286,7 +319,7 @@ protected:
 		
 		lapack_int value_count_max = 0;
 		
-		for (size_t m_index = 0; m_index < matrices_count; m_index++) {
+		_Cilk_for (size_t m_index = 0; m_index < matrices_count; m_index++) {
 
 			MatrixXcd M = (matrices_array) ? ((matrices_count == 1) ? *matrices_array : matrices_array[m_index]) :
 						((matrices_vector) ? (*matrices_vector)[m_index] : 
