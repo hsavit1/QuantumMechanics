@@ -1,0 +1,37 @@
+#include <mathimf.h>
+#include "Eigen/Dense"
+
+namespace Math = Eigen;
+
+using Math::Array;
+using Math::Matrix;
+
+#define MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, SizeSuffix) \
+using Math::Array##SizeSuffix##SizeSuffix##TypeSuffix; \
+using Math::Array##SizeSuffix##TypeSuffix; \
+using Math::Array##SizeSuffix##X##TypeSuffix; \
+using Math::Array##X##SizeSuffix##TypeSuffix;
+
+#define MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, SizeSuffix) \
+using Math::Matrix##SizeSuffix##TypeSuffix; \
+using Math::Vector##SizeSuffix##TypeSuffix; \
+using Math::RowVector##SizeSuffix##TypeSuffix;
+
+#define MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE(TypeSuffix) \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 2) \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 3) \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 4) \
+using Math::ArrayXX##TypeSuffix; \
+MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 2) \
+MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 3) \
+MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 4) \
+MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, X) \
+
+#define MATH_USING_ARRAY_TYPEDEFS \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE(i) \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE(f) \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE(d) \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE(cf) \
+MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE(cd)
+
+MATH_USING_ARRAY_TYPEDEFS

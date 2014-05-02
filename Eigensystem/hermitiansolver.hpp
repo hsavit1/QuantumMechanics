@@ -21,7 +21,7 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 using namespace Eigen; 	// Escaping namespace Eigen!
 
 #include <mkl.h>	// Includes lapack.
-#include <tbb/mutex.h>	// Includes lapack.
+#include <tbb/mutex.h>	// Includes a thread lock mutex.
 
 #include "range.hpp" 	// Includes the custom struct range.
 
