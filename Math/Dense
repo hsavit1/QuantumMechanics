@@ -1,4 +1,5 @@
 #include <mathimf.h>
+#include "MKL_support_custom.h"
 #include "Eigen/Dense"
 
 namespace Math = Eigen;
