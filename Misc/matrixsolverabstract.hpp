@@ -74,7 +74,7 @@ public:
 		block_sizes = sizes;
 		const long block_count = block_sizes.size();
 		block_offsets = ArrayXi(block_count);
-		offsets[0] = 0;
+		block_offsets[0] = 0;
 		// A cumulative sum (first,last,destination_start).
 		std::partial_sum(&block_sizes[0], &block_sizes[block_count - 1], &block_offsets[1]);
 	}
@@ -94,37 +94,62 @@ public:
 	}
 
 protected:
-	virtual inline const Block<const InputMatrixType> block(const long &i, const long &j) const {
-		return matrix.block(block_offsets[i], block_offsets[j], block_sizes[i], block_sizes[j]);
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<const LOCAL> block(const LOCAL &M, const long &i, const long &j) const {
+		return M.block(block_offsets[i], block_offsets[j], block_sizes[i], block_sizes[j]);
 	}
 
-	virtual inline const Block<const InputMatrixType> blockRange(const long &i, const long &j, const long &n, const long &m) const {
-		return matrix.block(block_offsets[i], block_offsets[j], block_sizes.segment(i, i + n).sum(), block_sizes.segment(j, j + n).sum());
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<const LOCAL> blockRange(const LOCAL &M, const long &i, const long &j, const long &n, const long &m) const {
+		return M.block(block_offsets[i], block_offsets[j], block_sizes.segment(i, i + n).sum(), block_sizes.segment(j, j + n).sum());
 	}
 
-	virtual inline const Block<const OutputMatrixType> solutionBlock(const long &i, const long &j) const {
-		return solution_matrix.block(block_offsets[i], block_offsets[j], block_sizes[i], block_sizes[j]);
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<LOCAL> block(LOCAL &M, const long &i, const long &j) const {
+		return M.block(block_offsets[i], block_offsets[j], block_sizes[i], block_sizes[j]);
 	}
 
-	virtual inline const Block<const OutputMatrixType> solutionBlockRange(const long &i, const long &j, const long &n, const long &m) const {
-		return solution_matrix.block(block_offsets[i], block_offsets[j], block_sizes.segment(i, i + n).sum(), block_sizes.segment(j, j + n).sum());
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<LOCAL> blockRange(LOCAL &M, const long &i, const long &j, const long &n, const long &m) const {
+		return M.block(block_offsets[i], block_offsets[j], block_sizes.segment(i, i + n).sum(), block_sizes.segment(j, j + n).sum());
 	}
 
-	virtual inline const Block<Eigen::Reverse<const InputMatrixType, BothDirections>> reverseBlock(const long &i, const long &j) const {
-		return matrix.reverse().block(block_offsets[i], block_offsets[j], block_sizes[i], block_sizes[j]);
-	}
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<Eigen::Reverse<const LOCAL, BothDirections>> reverseBlock(const LOCAL &M, const long &i, const long &j) const { return block(M.reverse(), i, j);	}
 
-	virtual inline const Block<Eigen::Reverse<const InputMatrixType, BothDirections>> reverseBlockRange(const long &i, const long &j, const long &n, const long &m) const {
-		return matrix.reverse().block(block_offsets[i], block_offsets[j], block_sizes.segment(i, i + n).sum(), block_sizes.segment(j, j + n).sum());
-	}
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<const LOCAL> reverseBlockRange(const LOCAL &M, const long &i, const long &j, const long &n, const long &m) const { return blockRange(M.reverse(), i, j, n, m); }
 
-	virtual inline const Block<Eigen::Reverse<const OutputMatrixType, BothDirections>> reverseSolutionBlock(const long &i, const long &j) const {
-		return solution_matrix.reverse().block(block_offsets[i], block_offsets[j], block_sizes[i], block_sizes[j]);
-	}
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<LOCAL> reverseBlock(LOCAL &M, const long &i, const long &j) const  { return block(M.reverse(), i, j); }
 
-	virtual inline const Block<Eigen::Reverse<const OutputMatrixType, BothDirections>> reverseSolutionBlockRange(const long &i, const long &j, const long &n, const long &m) const {
-		return solution_matrix.reverse().block(block_offsets[i], block_offsets[j], block_sizes.segment(i, i + n).sum(), block_sizes.segment(j, j + n).sum());
-	}
+	template <typename LOCAL>
+	virtual inline const Eigen::Block<LOCAL> reverseBlockRange(LOCAL &M, const long &i, const long &j, const long &n, const long &m) const { return blockRange(M.reverse(), i, j, n, m); }
+
+
+	virtual inline const Eigen::Block<const InputMatrixType> block(const long &i, const long &j) const { return block(matrix, i, j); }
+
+	virtual inline const Eigen::Block<const OutputMatrixType> solutionBlock(const long &i, const long &j) const { return blockRange(solution_matrix, i, j); }
+
+	virtual inline const Eigen::Block<OutputMatrixType> solutionBlock(const long &i, const long &j) { return blockRange(solution_matrix, i, j); }
+
+	virtual inline const Eigen::Block<const InputMatrixType> blockRange(const long &i, const long &j, const long &n, const long &m) const { return blockRange(matrix, i, j, n, m); }
+
+	virtual inline const Eigen::Block<const OutputMatrixType> solutionBlockRange(const long &i, const long &j, const long &n, const long &m) const { return blockRange(solution_matrix, i, j, n, m); }
+
+	virtual inline const Eigen::Block<OutputMatrixType> solutionBlockRange(const long &i, const long &j, const long &n, const long &m) { return blockRange(solution_matrix, i, j, n, m); }
+
+	virtual inline const Eigen::Block<const InputMatrixType> reverseBlock(const long &i, const long &j) const { return reverseBlock(matrix, i, j); }
+
+	virtual inline const Eigen::Block<const OutputMatrixType> reverseSolutionBlock(const long &i, const long &j) const { return reverseBlockRange(solution_matrix, i, j); }
+
+	virtual inline const Eigen::Block<OutputMatrixType> reverseSolutionBlock(const long &i, const long &j) { return reverseBlockRange(solution_matrix, i, j); }
+
+	virtual inline const Eigen::Block<const InputMatrixType> reverseBlockRange(const long &i, const long &j, const long &n, const long &m) const { return reverseBlockRange(matrix, i, j, n, m); }
+
+	virtual inline const Eigen::Block<const OutputMatrixType> reverseSolutionBlockRange(const long &i, const long &j, const long &n, const long &m) const { return reverseBlockRange(solution_matrix, i, j, n, m); }
+
+	virtual inline const Eigen::Block<OutputMatrixType> reverseSolutionBlockRange(const long &i, const long &j, const long &n, const long &m) { return reverseBlockRange(solution_matrix, i, j, n, m); }
 
 	template <typename LOCAL>
 	virtual inline LOCAL zeroBlock(const long &i, const long &j) const {

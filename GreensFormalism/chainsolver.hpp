@@ -44,17 +44,31 @@ public:
 protected:	
 	void compute_semi_infinite_matrix_from_left() 
 	{
-		if (blockCount() != 2 || matrix.rows() < block_sizes[0] || matrix.cols() < block_sizes.segments(0,1).sum())
+		if (blockCount() != 2)
 		{
-			log() << "The chain matrix is not of the type [h,v], where both h and v are block matrices. Cannot move on alone."
+			log() << "The chain matrix is not of the type [h,v], where both h and v are block matrices. Cannot move on alone.";
 			return;
 		}
 				
 		MatrixXcd epsilon = block(0,0);
 		MatrixXcd g = epsilon.inverse();
 		MatrixXcd epsilonsurf = epsilon;
-		MatrixXcd alpha = block(0, 1).adjoint();
-		MatrixXcd beta = block(0, 1);
+
+		if (matrix.rows() >= block_sizes[0] && matrix.cols() >= block_sizes.segments(0, 1).sum())
+		{
+			MatrixXcd alpha = block(0, 1).adjoint();
+			MatrixXcd beta = block(0, 1);
+		}
+		else if (matrix.cols() >= block_sizes[0] && matrix.rows() >= block_sizes.segments(0, 1).sum())
+		{
+			MatrixXcd alpha = block(1, 0);
+			MatrixXcd beta = block(1, 0).adjoint();
+		}
+		else
+		{
+			log() << "The [h,v] blocks cannot be found. Cannot move on alone.";
+			return;
+		}
 
 		auto valid = [&]() {
 
@@ -82,7 +96,7 @@ protected:
 	
 	void compute_semi_infinite_matrix_from_right()
 	{
-		if (blockCount() != 2 || matrix.rows() < block_sizes[0] || matrix.cols() < block_sizes.segments(0, 1).sum())
+		if (blockCount() != 2)
 		{
 			log() << "The chain matrix is not of the type [h,v], where both h and v are block matrices. Cannot move on alone."
 				return;
@@ -91,8 +105,21 @@ protected:
 		MatrixXcd epsilon = block(0, 0);
 		MatrixXcd g = epsilon.inverse();
 		MatrixXcd epsilonsurf = epsilon;
-		MatrixXcd alpha = block(0, 1);
-		MatrixXcd beta = block(0, 1).adjoint();
+		if (matrix.rows() >= block_sizes[0] && matrix.cols() >= block_sizes.segments(0, 1).sum())
+		{
+			MatrixXcd alpha = block(0, 1);
+			MatrixXcd beta = block(0, 1).adjoint();
+		}
+		else if (matrix.cols() >= block_sizes[0] && matrix.rows() >= block_sizes.segments(0, 1).sum())
+		{
+			MatrixXcd alpha = block(1, 0).adjoint();
+			MatrixXcd beta = block(1, 0);
+		}
+		else
+		{
+			log() << "The [h,v] blocks cannot be found. Cannot move on alone.";
+			return;
+		}
 
 		auto valid = [&]() {
 

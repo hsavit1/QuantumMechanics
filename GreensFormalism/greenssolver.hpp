@@ -28,6 +28,8 @@ namespace GreensFormalism {
 	
 class GreensSolver : public MatrixSolverAbstract<MatrixXcd, MatrixXcd, GreenMatrixSubType> {
 
+	MatrixXcd reduced_sigma;
+
 public:
 	GreensSolver() : MatrixSolverAbstract() { }
 
@@ -58,7 +60,8 @@ protected:
 		const long block_count = blockCount();
 						
 		MatrixXcd g;
-		MatrixXcd sigma = reverseZeroBlock(0, 0);
+		MatrixXcd &sigma = reduced_sigma;
+		sigma = reverseZeroBlock<MatrixXcd>(0, 0);
 		
 		for (long b = 0; b < block_count; b++)
 		{
@@ -82,7 +85,8 @@ protected:
 		const long block_count = blockCount();
 
 		MatrixXcd g;
-		MatrixXcd sigma = zeroBlock(0, 0);
+		MatrixXcd &sigma = reduced_sigma;
+		sigma = zeroBlock<MatrixXcd>(0, 0);
 		
 		for (long b = 0; b < block_count; b++)
 		{
@@ -100,7 +104,8 @@ protected:
 		const long block_count = blockCount();
 		
 		std::vector<MatrixXcd> g(block_count, MatrixXcd());
-		MatrixXcd sigma = reverseZeroBlock(0, 0);
+		MatrixXcd &sigma = reduced_sigma;
+		sigma = reverseZeroBlock<MatrixXcd>(0, 0);
 		
 		for (long b = 0; b < block_count; b++)
 		{
@@ -110,7 +115,7 @@ protected:
 				sigma = reverseBlock(M, b + 1, b) * g[b] * reverseBlock(M, b, b + 1);
 		}
 
-		solution_matrix = reverseZeroBlockRange(0, 0, 0, block_count - 1);
+		solution_matrix = reverseZeroBlockRange<MatrixXcd>(0, 0, 0, block_count - 1);
 
 		reverseSolutionBlock(0, block_count - 1) = g[block_count - 1];
 
@@ -125,7 +130,8 @@ protected:
 		const long block_count = blockCount();
 
 		std::vector<MatrixXcd> g(block_count, MatrixXcd());
-		MatrixXcd sigma = zeroBlock(0, 0);
+		MatrixXcd &sigma = reduced_sigma;
+		sigma = zeroBlock<MatrixXcd>(0, 0);
 
 		for (long b = 0; b < block_count; b++)
 		{
@@ -135,7 +141,7 @@ protected:
 				sigma = block(M, b + 1, b) * g[b] * block(M, b, b + 1);
 		}
 
-		solution_matrix = zeroBlockRange(0, 0, 0, block_count - 1);
+		solution_matrix = zeroBlockRange<MatrixXcd>(0, 0, 0, block_count - 1);
 
 		solutionBlock(0, block_count - 1) = g[block_count - 1];
 
@@ -168,10 +174,14 @@ public:
 		}
 	}
 
-	void compute(compute_action action, const ArrayXi &sizes)
+	void compute(GreenMatrixSubType action, const ArrayXi &sizes)
 	{
 		setBlockSizes(sizes);
 		compute(action);
+	}
+
+	const MatrixXcd &reducedSigma() {
+		return reduced_sigma;
 	}
 };
 
