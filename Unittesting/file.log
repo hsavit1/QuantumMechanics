@@ -1,0 +1,21 @@
+icl /Qstd=c++11 -I../ -I../include/  /Qmkl /Qtbb  /QMMD /QMFdeps/GreensFormalismUnittesting.dep /c /Foobj/GreensFormalismUnittesting.obj GreensFormalismUnittesting.cpp
+GreensFormalismUnittesting.cpp
+icl /Qstd=c++11 -I../ -I../include/  /Qmkl /Qtbb  /FeGreensFormalismUnittesting.exe obj/GreensFormalismUnittesting.obj
+Microsoft (R) Incremental Linker Version 12.00.21005.1
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+-out:GreensFormalismUnittesting.exe 
+"-libpath:C:\Program Files (x86)\Intel\Composer XE 2013 SP1\mkl\lib\intel64" 
+"-libpath:C:\Program Files (x86)\Intel\Composer XE 2013 SP1\tbb\bin\..\lib\intel64\vc8" 
+obj/GreensFormalismUnittesting.obj 
+icl /Qstd=c++11 -I../ -I../include/  /Qmkl /Qtbb  /QMMD /QMFdeps/EigensystemUnittesting.dep /c /Foobj/EigensystemUnittesting.obj EigensystemUnittesting.cpp
+EigensystemUnittesting.cpp
+icl /Qstd=c++11 -I../ -I../include/  /Qmkl /Qtbb  /FeEigensystemUnittesting.exe obj/EigensystemUnittesting.obj
+Microsoft (R) Incremental Linker Version 12.00.21005.1
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+-out:EigensystemUnittesting.exe 
+"-libpath:C:\Program Files (x86)\Intel\Composer XE 2013 SP1\mkl\lib\intel64" 
+"-libpath:C:\Program Files (x86)\Intel\Composer XE 2013 SP1\tbb\bin\..\lib\intel64\vc8" 
+obj/EigensystemUnittesting.obj 
+Executable 'GreensFormalismUnittesting.exe EigensystemUnittesting.exe' has been compiled.

@@ -1,6 +1,11 @@
 #include <mathimf.h>
-#include "MKL_support_custom.h"
-#include "Eigen/Dense"
+#include <numeric>
+#include "MKL_support_custom.hpp"
+#include "range.hpp"
+#define EIGEN_DENSEBASE_PLUGIN "denseplugin.hpp"
+#define EIGEN_MATRIXBASE_PLUGIN "matrixplugin.hpp"
+#include <Eigen/Dense>
+#include "blockmatrix.hpp"
 
 namespace Math = Eigen;
 
@@ -15,6 +20,7 @@ using Math::Array##X##SizeSuffix##TypeSuffix;
 
 #define MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, SizeSuffix) \
 using Math::Matrix##SizeSuffix##TypeSuffix; \
+using Math::BlockMatrix##SizeSuffix##TypeSuffix; \
 using Math::Vector##SizeSuffix##TypeSuffix; \
 using Math::RowVector##SizeSuffix##TypeSuffix;
 
@@ -22,6 +28,7 @@ using Math::RowVector##SizeSuffix##TypeSuffix;
 MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 2) \
 MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 3) \
 MATH_USING_ARRAY_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 4) \
+using Math::ArrayX##TypeSuffix; \
 using Math::ArrayXX##TypeSuffix; \
 MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 2) \
 MATH_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 3) \

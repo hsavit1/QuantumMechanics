@@ -1,0 +1,145 @@
+/*
+Header file for QuantumMechanics::GreensFormalism::ChainSolver: 
+
+This file solves a list of one or more matrices stored in a c-style array, stl-style vector,
+or a return from a function(int). When not using vector (or a single matrix) the 
+
+---
+Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
+ */
+#ifndef _GREENSFORMALISM_CHAINSOLVER_H_
+#define _GREENSFORMALISM_CHAINSOLVER_H_
+
+#include "../Misc/MatrixSolverAbstract"
+#include "../Misc/LoggingObject"
+#include "../Misc/FeedbackObject"
+
+namespace QuantumMechanics {
+
+namespace GreensFormalism {
+
+	enum ChainType {
+		LeftSemiInfinite,
+		RightSemiInfinite
+	};
+	
+class ChainSolver : public MatrixSolverAbstract<MatrixXcd, MatrixXcd, ChainType>  {
+
+const Math::Ref<const MatrixXcd> &hopping_matrix;
+
+public:
+
+	long max_iterations;
+
+	ChainSolver() : MatrixSolverAbstract(), max_iterations(1000), hopping_matrix(empty_matrix) { }
+
+	ChainSolver(const Math::Ref<const MatrixXcd> &H, const Math::Ref<const MatrixXcd> &V) : MatrixSolverAbstract(H), hopping_matrix(V), max_iterations(1000) { }
+
+	static LoggingObject log;
+	
+protected:
+	void compute_semi_infinite_matrix_from_right()
+	{
+		if (blockCount() != 0)
+		{
+			log() << "The chain does not yet work with blocks. It will use the full matrix.";
+			return;
+		}
+
+		MatrixXcd epsilon = input();
+		MatrixXcd g = epsilon.inverse();
+		MatrixXcd epsilonsurf = epsilon;
+
+		MatrixXcd alpha = hopping_matrix;
+		MatrixXcd beta = hopping_matrix.adjoint();
+
+		auto valid = [&]() {
+
+			if (alpha.isMuchSmallerThan(1.0e-12) && beta.isMuchSmallerThan(1.0e-12))
+				return true;
+
+			return false;
+		};
+
+		for (int iter = 0; iter < max_iterations && valid(); iter++)
+		{
+			epsilon += (beta * g * alpha + alpha * g * beta);
+			epsilonsurf += (alpha * g * beta);
+
+			alpha = (alpha * g * alpha);
+			beta = (beta * g * beta);
+
+			g = epsilon.inverse();
+		}
+
+		epsilonsurf += (alpha * g * beta);
+
+		solution() = epsilonsurf.inverse();
+	}
+
+	void compute_semi_infinite_matrix_from_left()
+	{
+		if (blockCount() != 0)
+		{
+			log() << "The chain does not yet work with blocks. It will use the full matrix.";
+			return;
+		}
+
+		MatrixXcd epsilon = input();
+		MatrixXcd g = epsilon.inverse();
+		MatrixXcd epsilonsurf = epsilon;
+
+		MatrixXcd alpha = hopping_matrix.adjoint();
+		MatrixXcd beta = hopping_matrix;
+
+		auto valid = [&]() {
+
+			if (alpha.isMuchSmallerThan(1.0e-12) && beta.isMuchSmallerThan(1.0e-12))
+				return true;
+
+			return false;
+		};
+
+		for (int iter = 0; iter < max_iterations && valid(); iter++)
+		{
+			epsilon += (beta * g * alpha + alpha * g * beta);
+			epsilonsurf += (alpha * g * beta);
+
+			alpha = (alpha * g * alpha);
+			beta = (beta * g * beta);
+
+			g = epsilon.inverse();
+		}
+
+		epsilonsurf += (alpha * g * beta);
+
+		solution() = epsilonsurf.inverse();
+	}
+	
+public:
+	inline void compute(const ChainType &action)
+	{
+		if (action == LeftSemiInfinite)
+			compute_semi_infinite_matrix_from_left();
+		else if (action == RightSemiInfinite)
+			compute_semi_infinite_matrix_from_right();
+	}
+
+	void compute(const ChainType &action, const Array3i &sizes)
+	{
+		setBlockSizes(sizes);
+		compute(action);
+	}
+};
+
+LoggingObject ChainSolver::log("GreensFormalism::ChainSolver", false);
+
+}
+
+}
+
+#include "../Misc/MatrixListSolver"
+
+typedef MatrixListSolver<ChainSolver> ChainListSolver;
+
+#endif  

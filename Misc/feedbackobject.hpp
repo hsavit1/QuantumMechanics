@@ -7,6 +7,7 @@ or a return from a function(int). When not using vector (or a single matrix) the
 ---
 Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 */
+
 #ifndef _FEEDBACKOBJECT_H_
 #define _FEEDBACKOBJECT_H_
 
@@ -28,7 +29,7 @@ public:
 	FeedbackObject() : feedback_function(nullptr) { } 
 	virtual ~FeedbackObject() { }
 
-	void enableFeedback(std::function<void(double)> function) {
+	void enableFeedback(std::function<void(double)> function) :  {
 		feedback_function = function;
 	}
 
@@ -36,7 +37,7 @@ protected:
 	void addToProgress(double delta) {
 		bool exists;
 		auto& i = local_counters.local(exists);
-		i += delta;
+		i = i + delta;
 		if (!exists)
 			// First time we've seen this local counter.
 			local_counter_pointers.push_back(&i);

@@ -10,120 +10,55 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 #ifndef _GREENSFORMALISM_CHAINSOLVER_H_
 #define _GREENSFORMALISM_CHAINSOLVER_H_
 
-#include "../Misc/MatrixSolverAbstract"
-#include "../Misc/LoggingOject"
-#include "../Misc/FeedbackObject"
+#include "Math/Dense"
+#include "Misc/LoggingObject"
 
 namespace QuantumMechanics {
 
 namespace GreensFormalism {
 
-	enum ChainType {
-		LeftSemiInfinite,
-		RightSemiInfinite
+	enum ResultType {
+		SurfaceGreensMatrix
 	};
 	
-class ChainSolver : public MatrixSolverAbstract<MatrixXcd, MatrixXcd, ChainType>  {
+class ChainSolver{
+
+	const BlockMatrixXcd H;
+	const BlockMatrixXcd V;
+	BlockMatrixXcd G;
+
+	static LoggingObject log;
 
 public:
 
 	long max_iterations;
 
-	ChainSolver() : MatrixSolverAbstract(), max_iterations(100) {}
+	ChainSolver(const BlockMatrixXcd &h, const BlockMatrixXcd &v) : H(h), V(v), max_iterations(1000) { }
 
-	ChainSolver(const MatrixXcd &M) : MatrixSolverAbstract(M), max_iterations(100) { }
+	ChainSolver(const MatrixXcd &h, const MatrixXcd &v) : H(h), V(v), max_iterations(1000) { }
 
-	ChainSolver(const MatrixXcd &M, const size_t &size) : MatrixSolverAbstract(M, size), max_iterations(100) { }
-
-	ChainSolver(const MatrixXcd * const M) : MatrixSolverAbstract(M), max_iterations(100) { }
-
-	ChainSolver(const MatrixXcd * const M, const size_t &size) : MatrixSolverAbstract(M, size), max_iterations(100) { }
-
-	static LoggingObject log;
-	
-protected:	
-	void compute_semi_infinite_matrix_from_left() 
+	static inline void enableLog()
 	{
-		if (blockCount() != 2)
-		{
-			log() << "The chain matrix is not of the type [h,v], where both h and v are block matrices. Cannot move on alone.";
-			return;
-		}
-				
-		MatrixXcd epsilon = block(0,0);
-		MatrixXcd g = epsilon.inverse();
-		MatrixXcd epsilonsurf = epsilon;
-
-		if (matrix.rows() >= block_sizes[0] && matrix.cols() >= block_sizes.segments(0, 1).sum())
-		{
-			MatrixXcd alpha = block(0, 1).adjoint();
-			MatrixXcd beta = block(0, 1);
-		}
-		else if (matrix.cols() >= block_sizes[0] && matrix.rows() >= block_sizes.segments(0, 1).sum())
-		{
-			MatrixXcd alpha = block(1, 0);
-			MatrixXcd beta = block(1, 0).adjoint();
-		}
-		else
-		{
-			log() << "The [h,v] blocks cannot be found. Cannot move on alone.";
-			return;
-		}
-
-		auto valid = [&]() {
-
-			if ((alpha > 1.0e-10).any() + (beta > 1.0e-10).any())
-				return true;
-
-			return false;
-		};
-		
-		for (int iter = 0; iter < max_iterations && valid(); iter++)
-		{
-			epsilon += (beta * g * alpha + alpha * g * beta);
-			epsilonsurf += (alpha * g * beta);
-
-			alpha = (alpha * g * alpha);
-			beta = (beta * g * beta);
-			
-			g = epsilon.inverse();
-		}
-
-		epsilonsurf += (alpha * g * beta);
-		
-		solution_matrix = epsilonsurf.inverse();
+		log.enable();
 	}
-	
-	void compute_semi_infinite_matrix_from_right()
-	{
-		if (blockCount() != 2)
-		{
-			log() << "The chain matrix is not of the type [h,v], where both h and v are block matrices. Cannot move on alone."
-				return;
-		}
 
-		MatrixXcd epsilon = block(0, 0);
-		MatrixXcd g = epsilon.inverse();
+protected:
+	void compute_matrix()
+	{
+		const long block_count = (H.isSquare() || H.blockRows() < H.blockCols() ? H.blockRows() : H.blockCols());
+
+		log() << "Preparing to calculate the surface solution of " << block_count << "-by-" << block_count << " blocks chain parts." << std::endl;
+
+		MatrixXcd epsilon = H;
+		G = epsilon.inverse();
 		MatrixXcd epsilonsurf = epsilon;
-		if (matrix.rows() >= block_sizes[0] && matrix.cols() >= block_sizes.segments(0, 1).sum())
-		{
-			MatrixXcd alpha = block(0, 1);
-			MatrixXcd beta = block(0, 1).adjoint();
-		}
-		else if (matrix.cols() >= block_sizes[0] && matrix.rows() >= block_sizes.segments(0, 1).sum())
-		{
-			MatrixXcd alpha = block(1, 0).adjoint();
-			MatrixXcd beta = block(1, 0);
-		}
-		else
-		{
-			log() << "The [h,v] blocks cannot be found. Cannot move on alone.";
-			return;
-		}
+
+		MatrixXcd alpha = V;
+		MatrixXcd beta = V.adjoint();
 
 		auto valid = [&]() {
 
-			if ((alpha > 1.0e-10).any() + (beta > 1.0e-10).any())
+			if (alpha.isZero(1.0e-12) && beta.isZero(1.0e-12))
 				return true;
 
 			return false;
@@ -131,33 +66,29 @@ protected:
 
 		for (int iter = 0; iter < max_iterations && valid(); iter++)
 		{
-			epsilon += (beta * g * alpha + alpha * g * beta);
-			epsilonsurf += (alpha * g * beta);
+			epsilon += (beta * G * alpha + alpha * G * beta);
+			epsilonsurf += (alpha * G * beta);
 
-			alpha = (alpha * g * alpha);
-			beta = (beta * g * beta);
+			alpha = (alpha * G * alpha);
+			beta = (beta * G * beta);
 
-			g = epsilon.inverse();
+			G = epsilon.inverse();
 		}
 
-		epsilonsurf += (alpha * g * beta);
+		epsilonsurf += (alpha * G * beta);
 
-		solution_matrix = epsilonsurf.inverse();
+		G = epsilonsurf.inverse();
 	}
-	
+		
 public:
-	inline void compute(const ChainType &action)
+	inline void compute(const ResultType &action)
 	{
-		if (action == LeftSemiInfinite)
-			compute_semi_infinite_matrix_from_left();
-		else if (action == RightSemiInfinite)
-			compute_semi_infinite_matrix_from_right();
+		if (action == SurfaceGreensMatrix)
+			compute_matrix();
 	}
 
-	void compute(const ChainType &action, const Array3i &sizes)
-	{
-		setBlockSizes(sizes);
-		compute(action);
+	const BlockMatrixXcd &greensMatrix() const {
+		return G;
 	}
 };
 
@@ -166,9 +97,5 @@ LoggingObject ChainSolver::log("GreensFormalism::ChainSolver", false);
 }
 
 }
-
-#include "../Misc/MatrixListSolver"
-
-typedef MatrixListSolver<ChainSolver> ChainListSolver;
 
 #endif  

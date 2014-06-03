@@ -41,7 +41,11 @@ protected:
 	std::ostream & log()
 	{
 		if (logging_enabled)
-			return ( std::clog << ((objectIdenifier.empty()) ? "Message:" : objectIdenifier << " message: ") );
+			return (
+				(objectIdenifier.empty()) ? 
+					std::clog << "Message:" : 
+					std::clog << objectIdenifier << " message: "
+				);
 		else
 			return null_stream;
 	}
