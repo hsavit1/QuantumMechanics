@@ -1,1 +1,1 @@
-"C:\Program Files (x86)\Git\bin\git.exe" commitx -m "Daily Add & Commit"
+"C:\Program Files (x86)\Git\bin\git.exe" commitx -m "Daily Add and Commit"
