@@ -3,7 +3,7 @@
 Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 */
 
-typedef Matrix<RealScalar, internal::traits<Derived>::ColsAtCompileTime, 1, ColMajor> HermitianEigenvaluesReturnType;
+typedef Matrix<RealScalar, Dynamic, 1> HermitianEigenvaluesReturnType;
 typedef HermitianEigenvaluesReturnType HermitianEigenvaluesType;
 
 inline HermitianEigenvaluesReturnType hermitianEigenvalues(range r) const
@@ -17,12 +17,14 @@ inline HermitianEigenvaluesReturnType hermitianEigenvalues(range r) const
 	const char job_token = 'N'; // Normal (only eigenvalues).
 	const char upper_lower_token = 'U';
 
-	HermitianEigenvaluesType values = Matrix<Scalar, Dynamic, 1>(M.rows());
 	
 	// Problem dimensions:
 	const lapack_int major_dim_order = (IsRowMajor) ? LAPACK_ROW_MAJOR : LAPACK_COL_MAJOR;
 	const lapack_int major_dim_length = (IsRowMajor) ? M.rows() : M.cols();
+	const lapack_int size_vectors = (range_token == 'I') ? r.end_index - r.begin_index + 1 : major_dim_length;
 	lapack_int value_count;
+
+	HermitianEigenvaluesType values = Matrix<Scalar, Dynamic, 1>(size_vectors);
 
 	// Additional eigenvector dimensions:
 	MKL_Complex16* vectors = nullptr;
@@ -55,6 +57,9 @@ inline HermitianEigenvaluesReturnType hermitianEigenvalues(range r) const
 		values.fill(nan(0));
 	}
 
+	if (value_count < lead_dim_vectors)
+		values.conservativeResize(value_count);
+
 	return values;
 }
 
@@ -79,9 +84,8 @@ inline EigenvectorsReturnType hermitianEigenvectors(range r) const
 	EigenvectorsReturnType result;
 	HermitianEigenvaluesType &values = result.first;
 	EigenvectorsType &eigenvectors = result.second;
-	values = Matrix<RealScalar, Dynamic, 1>(M.rows());
+	values = Matrix<RealScalar, Dynamic, 1>(size_vectors);
 	eigenvectors = Matrix<Scalar, Dynamic, Dynamic>(lead_dim_vectors, size_vectors);
-
 
 	// Problem dimensions:
 	const lapack_int major_dim_order = (IsRowMajor) ? LAPACK_ROW_MAJOR : LAPACK_COL_MAJOR;
@@ -90,7 +94,7 @@ inline EigenvectorsReturnType hermitianEigenvectors(range r) const
 
 	// Additional eigenvector dimensions:
 	lapack_int* vectors_suppliements = new lapack_int[2 * lead_dim_vectors];
-
+	
 	lapack_int info = LAPACKE_zheevr(
 		major_dim_order,				// param. 0
 		job_token,						// param. 1
@@ -118,7 +122,10 @@ inline EigenvectorsReturnType hermitianEigenvectors(range r) const
 	}
 
 	if (value_count < lead_dim_vectors)
+	{
+		values.conservativeResize(value_count);
 		eigenvectors.conservativeResize(lead_dim_vectors, value_count);
-
+	}
+	
 	return result;
 }

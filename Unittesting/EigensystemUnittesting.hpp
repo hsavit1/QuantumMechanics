@@ -23,16 +23,13 @@ namespace Unittesting {
 
 		auto result = M.hermitianEigenvectors(range::full());
 
-		MatrixXd D = result.first;
+		MatrixXd D = result.first.asDiagonal();
 		MatrixXcd V = result.second;
-
-		std::cout << D << std::endl << std::endl << V;
-
+		
 		assert_function("The return format of Eigensystem::HermitianSolver is incorrect. The number of eigenvalues is not consistent with matrix size.", D.rows() == 10);
 		assert_function("The return format of Eigensystem::HermitianSolver is incorrect. The number of (or size of all) eigenvectors is not consistent with matrix size.", V.rows() == 10 && V.cols() == 10);
 
 		assert_function("The Eigensystem::HermitianSolver could not solve a random hermitian 10x10 matrix.", M.isApprox(V * D * V.inverse()));
-
 	}
 
 	void test_ranges(std::function<void(std::string, bool)> assert_function) {
@@ -41,7 +38,7 @@ namespace Unittesting {
 
 		auto result = M.hermitianEigenvectors(range::full());
 
-		MatrixXd D = result.first;
+		MatrixXd D = result.first.asDiagonal();
 		MatrixXcd V = result.second;
 
 		assert_function("The Eigensystem::HermitianSolver could not solve a random hermitian 10x10 matrix.", (V * D).isApprox(M * V));
@@ -50,7 +47,7 @@ namespace Unittesting {
 
 		result = M.hermitianEigenvectors(range::lowest(4));
 
-		MatrixXd D1 = result.first;
+		MatrixXd D1 = result.first.asDiagonal();
 		MatrixXcd V1 = result.second;
 
 		assert_function("The Eigensystem::HermitianSolver could not find the lowest 4 values.", D1.isApprox(D.topLeftCorner(4, 4)));
@@ -60,7 +57,7 @@ namespace Unittesting {
 
 		result = M.hermitianEigenvectors(range::highest(4));
 
-		MatrixXd D2 = result.first;
+		MatrixXd D2 = result.first.asDiagonal();
 		MatrixXcd V2 = result.second;
 
 		assert_function("The Eigensystem::HermitianSolver could not find the highest 4 values.", D2.isApprox(D.bottomRightCorner(4, 4)));
@@ -70,7 +67,7 @@ namespace Unittesting {
 
 		result = M.hermitianEigenvectors(range::span(3, 8));
 
-		MatrixXd D3 = result.first;
+		MatrixXd D3 = result.first.asDiagonal();
 		MatrixXcd V3 = result.second;
 
 		assert_function("The Eigensystem::HermitianSolver could not find the span(3,8) values.", D3.isApprox(D.block(3, 3, 6, 6)));
@@ -80,7 +77,7 @@ namespace Unittesting {
 
 		result = M.hermitianEigenvectors(range::middle(4));
 
-		MatrixXd D4 = result.first;
+		MatrixXd D4 = result.first.asDiagonal();
 		MatrixXcd V4 = result.second;
 		
 		assert_function("The Eigensystem::HermitianSolver could not find the middle 4 values.", D4.isApprox(D.block(4, 4, 4, 4)));
@@ -93,7 +90,7 @@ namespace Unittesting {
 
 		result = M.hermitianEigenvectors(range::values(low, high));
 
-		MatrixXd D5 = result.first;
+		MatrixXd D5 = result.first.asDiagonal();
 		MatrixXcd V5 = result.second;
 
 		assert_function("The Eigensystem::HermitianSolver could not find the 4 values between a low/high range.", D5.isApprox(D.block(4, 4, 4, 4)));
