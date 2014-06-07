@@ -10,9 +10,6 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 #ifndef _GEOMETRY_LATTICE_H_
 #define _GEOMETRY_LATTICE_H_
 
-#include <iostream> // For printing useful messages.
-#include <fstream> // For empty streams.
-
 #include <Math/Dense>
 
 namespace QuantumMechanics {
@@ -23,170 +20,166 @@ class Lattice {
 
 private:
 	MatrixXd lattice_matrix;
+	MatrixXd reciprocal_lattice_matrix;
 
-public:
-	inline set(const MatrixXd &lattice)
+protected:
+	inline static MatrixXd create_lattice_matrix(const Vector2d &v1, const Vector2d &v2)
 	{
-		if (lattice.rows() > 0 && lattice.rows() < 4 && lattice.cols() > 0 && lattice.cols() < 4)
-			lattice_matrix = lattice;
+		return MatrixXd(2, 2) << v1 << v2;
 	}
 
-	inline set(const std::vector<VectorXd> &lattice)
+	inline static MatrixXd create_lattice_matrix(const Vector3d &v1, const Vector3d &v2)
 	{
-		const long lattice_dimension = lattice.size();
+		return MatrixXd(3, 2) << v1 << v2;
+	}
 
-		if (lattice_dimension == 1)
+	inline static MatrixXd create_lattice_matrix(const Vector3d &v1, const Vector3d &v2, const Vector3d &v3)
+	{
+		return MatrixXd(3, 3) << v1 << v2 << v3;
+	}
+
+	inline static MatrixXd calculate_reciprocal_matrix(const MatrixXd lattice)
+	{
+		const long dimensions = lattice.cols();
+		const long v_length = lattice.rows();
+
+		MatrixXd result;
+
+		if (dimensions == 1)
 		{
-			long vector_size = lattice[0].size();
-			if (vector_size > 0 && vector_size < 4)
-				lattice_matrix = MatrixXd(vector_size, lattice_dimension) << lattice[0];
+			result = 2 * M_PI * lattice.col(0) / lattice.col(0).squaredNorm();
 		}
-		else if (lattice_dimension == 2)
+		else if (dimensions == v_length)
 		{
-			long vector_size = lattice[0].size();
-			long vector_size = (vector_size > lattice[1].size()) ? vector_size : lattice[1].size();
-			if (vector_size > 0 && vector_size < 4)
-				lattice_matrix = MatrixXd(vector_size, lattice_dimension) << lattice[0] << lattice[1];
+			result = 2 * M_PI * lattice.inverse().transpose();
 		}
-		else if (lattice_dimension == 3)
+		else if (dimensions == 2 && v_length == 3)
 		{
-			long vector_size = lattice[0].size();
-			long vector_size = (vector_size > lattice[1].size()) ? vector_size : lattice[1].size();
-			long vector_size = (vector_size > lattice[2].size()) ? vector_size : lattice[2].size();
-			if (vector_size > 0 && vector_size < 4)
-				lattice_matrix = MatrixXd(vector_size, lattice_dimension) << lattice[0] << lattice[1] << lattice[2];
+			MatrixXd tmp_lattice = MatrixXd(3, 3) << lattice << lattice.col(0).cross(lattice.col(1)).normalized();
+
+			result = 2 * M_PI * tmp_lattice.inverse().transpose();
 		}
 		else
-			return;
+		{
+			//Error
+		}
+
+		return result;
 	}
 
-	inline set(const VectorXd &v1)
+public:
+	inline void set(const Matrix<double, 1, 1> &v)
 	{
-		long vector_size = v1.size();
-		if (vector_size > 0 && vector_size < 4)
-			lattice_matrix = MatrixXd(vector_size, lattice_dimension) << v1;
+		lattice_matrix = v;
 	}
 
-	inline set(const VectorXd &v1, const VectorXd &v2)
+	inline void set(const Vector2d &v)
 	{
-		long vector_size = v1.size();
-		long vector_size = (vector_size > v2.size()) ? vector_size : v2.size();
-		if (vector_size > 0 && vector_size < 4)
-			lattice_matrix = MatrixXd(vector_size, lattice_dimension) << v1 << v2;
+		lattice_matrix = v;
 	}
 
-	inline set(const VectorXd &v1, const VectorXd &v2, const VectorXd &v3)
+	inline void set(const Vector3d &v)
 	{
-		long vector_size = v1.size();
-		long vector_size = (vector_size > v2.size()) ? vector_size : v2.size();
-		long vector_size = (vector_size > v3.size()) ? vector_size : v3.size();
-		if (vector_size > 0 && vector_size < 4)
-			lattice_matrix = MatrixXd(vector_size, lattice_dimension) << v1 << v2 << v3;
+		lattice_matrix = v;
 	}
 
-	Lattice() : lattice_matrix() { }
+	inline void set(const Vector2d &v1, const Vector2d &v2)
+	{
+		lattice_matrix = create_lattice_matrix(v1, v2);
+	}
 
-	Lattice(const MatrixXd &lattice) :
-		lattice_matrix(lattice)
+	inline void set(const Vector3d &v1, const Vector3d &v2)
+	{
+		lattice_matrix = create_lattice_matrix(v1, v2);
+	}
+
+	inline void set(const Vector3d &v1, const Vector3d &v2, const Vector3d &v3)
+	{
+		lattice_matrix = create_lattice_matrix(v1, v2, v3);
+	}
+
+	inline void set(const Matrix2d &m)
+	{
+		lattice_matrix = m;
+	}
+
+	inline void set(const Matrix<double, 3, 2> &m)
+	{
+		lattice_matrix = m;
+	}
+
+	inline void set(const Matrix3d &m)
+	{
+		lattice_matrix = m;
+	}
+
+	Lattice() { }
+
+	Lattice(const Matrix<double, 1, 1> &v) :
+		lattice_matrix(v),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(v))
 	{ }
 
-	Lattice(const std::vector<VectorXd> &lattice) :
-		lattice_matrix()
-	{
-		set(lattice);
-	}
+	Lattice(const Vector2d &v) :
+		lattice_matrix(v),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(v))
+	{ }
 
-	Lattice(const VectorXd &v1) :
-		lattice_matrix()
-	{
-		set(v1);
-	}
+	Lattice(const Vector3d &v) :
+		lattice_matrix(v),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(v))
+	{ }
 
-	Lattice(const VectorXd &v1, const VectorXd &v2) :
-		lattice_matrix()
-	{
-		set(v1, v2);
-	}
+	Lattice(const Vector2d &v1, const Vector2d &v2) :
+		lattice_matrix(create_lattice_matrix(v1, v2)),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(create_lattice_matrix(v1, v2)))
+	{ }
 
-	Lattice(const VectorXd &v1, const VectorXd &v2, const VectorXd &v3) :
-		lattice_matrix()
-	{
-		set(v1, v2, v3);
-	}
+	Lattice(const Vector3d &v1, const Vector3d &v2) :
+		lattice_matrix(create_lattice_matrix(v1, v2)),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(create_lattice_matrix(v1, v2)))
+	{ }
 
-	inline dimensions() const
+	Lattice(const Vector3d &v1, const Vector3d &v2, const Vector3d &v3) :
+		lattice_matrix(create_lattice_matrix(v1, v2, v3)),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(create_lattice_matrix(v1, v2, v3)))
+	{ }
+
+	Lattice(const Matrix2d &m) :
+		lattice_matrix(m),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(m))
+	{ }
+
+	Lattice(const Matrix<double, 3, 2> &m) :
+		lattice_matrix(m),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(m))
+	{ }
+
+	Lattice(const Matrix3d &m) :
+		lattice_matrix(m),
+		reciprocal_lattice_matrix(calculate_reciprocal_matrix(m))
+	{ }
+
+	inline long dimensions() const
 	{
 		return lattice_matrix.cols();
 	}
 
-	inline vectorsize() const
+	inline long vectorsize() const
 	{
 		return lattice_matrix.rows();
 	}
 
-	// TODO: to disable all log from these elements set this to false.	
-	static bool logging_enabled;
-
-	void enableProgressFeedback(std::function<void(double)> feedback_function) {
-		progress_function = feedback_function;
-	}
-
-protected:
-	static std::ostream null_stream;
-
-	std::ostream & log()
+	inline const MatrixXd &latticeMatrix() const
 	{
-		if (logging_enabled)
-			return (std::clog << "Eigensystem::HermitianSolver message: ");
-		else
-			return null_stream;
+		return lattice_matrix;
 	}
-
-	std::ostream & logAppend()
+	
+	inline const MatrixXd &reciprocalMatrix() const
 	{
-		if (logging_enabled)
-			return std::clog;
-		else
-			return null_stream;
-	}
-
-	inline static std::vector<VectorXd> from_lattice_to_corners(const MatrixXd lattice)
-	{
-
-	}
-
-public:
-	inline std::vector<VectorXd> unitcellCorners() const
-	{
-		return from_lattice_to_corners(lattice_matrix);
-	}
-
-	inline MatrixXd reciprocalMatrix() const
-	{
-		MatrixXd result_matrix = lattice_matrix;
-		return result_matrix;
-	}
-
-	inline std::vector<VectorXd> reciprocal() const
-	{
-		std::vector<VectorXd> result_vectors(dimensions(), VectorXd(vectorsize()));
-		const MatrixXd result_matrix = reciprocalMatrix();
-
-		for (long v = 0; v <; v++)
-			result_vectors[v] = result_matrix.col(v);
-
-		return result_vectors;
-	}
-
-	inline std::vector<VectorXd> reciprocalUnitcellCorners() const
-	{
-		return from_lattice_to_corners(reciprocalMatrix());
+		return reciprocal_lattice_matrix;
 	}
 };
-
-
-std::ostream Lattice::null_stream(0);
-bool Lattice::logging_enabled(false);
 
 }
 
