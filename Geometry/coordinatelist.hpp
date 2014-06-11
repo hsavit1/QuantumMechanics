@@ -274,7 +274,7 @@ class CoordinateListRepeat : public CoordinateListBase< CoordinateListRepeat<COO
 public:
 	typedef COORDSLIST::Scalar Scalar;
 	typedef COORDSLIST::Columns Columns;
-	typedef CoordinateListBase< CoordinateListMerge<COORDSLIST>> Base;
+	typedef CoordinateListBase< CoordinateListRepeat<COORDSLIST>> Base;
 	typedef COORDSLIST CoordsList;
 	typedef CoordsList::ListMatrix ListMatrix;
 
@@ -382,15 +382,18 @@ protected:
 	}
 
 public:
-	CoordinateListRepeat(const COORDSLIST &list, const Matrix<Scalar, 1, Columns> &vectors, const Matrix<long, 1, 1> &repeats) :
+	CoordinateListRepeat(const COORDSLIST &l, const Matrix<Scalar, 1, Columns> &vectors, const Matrix<long, 1, 1> &repeats) :
+		list(l),
 		displacementlist(makedisplacements(vectors, repeats))
 	{ }
 
-	CoordinateListRepeat(const COORDSLIST &list, const Matrix<Scalar, 2, Columns> &vectors, const Matrix<long, 2, 1> &repeats) :
+	CoordinateListRepeat(const COORDSLIST &l, const Matrix<Scalar, 2, Columns> &vectors, const Matrix<long, 2, 1> &repeats) :
+		list(l),
 		displacementlist(makedisplacements(vectors, repeats))
 	{ }
 
-	CoordinateListRepeat(const COORDSLIST &list, const Matrix<Scalar, 3, Columns> &vectors, const Matrix<long, 3, 1> &repeats) :
+	CoordinateListRepeat(const COORDSLIST &l, const Matrix<Scalar, 3, Columns> &vectors, const Matrix<long, 3, 1> &repeats) :
+		list(l),
 		displacementlist(makedisplacements(vectors, repeats))
 	{ }
 };
@@ -401,18 +404,86 @@ CoordinateListRepeat<COORDSLIST> repeat(const COORDSLIST &list, const Matrix<COO
 	return CoordinateListRepeat<COORDSLIST>(list, vectors, repeats);
 }
 
-
 template<typename COORDSLIST>
 CoordinateListRepeat<COORDSLIST> repeat(const COORDSLIST &list, const Matrix<COORDSLIST::Scalar, 2, COORDSLIST::Columns> &vectors, const Matrix<long, 2, 1> &repeats)
 {
 	return CoordinateListRepeat<COORDSLIST>(list, vectors, repeats);
 }
 
-
 template<typename COORDSLIST>
 CoordinateListRepeat<COORDSLIST> repeat(const COORDSLIST &list, const Matrix<COORDSLIST::Scalar, 3, COORDSLIST::Columns> &vectors, const Matrix<long, 3, 1> &repeats)
 {
 	return CoordinateListRepeat<COORDSLIST>(list, vectors, repeats);
+}
+
+#include <algorithm>    // std::sort
+
+template<typename COORDSLIST, typename SORTFUNC>
+class CoordinateListSort : public CoordinateListBase< CoordinateListSort<COORDSLIST, SORTFUNC> >
+{
+public:
+	typedef COORDSLIST::Scalar Scalar;
+	typedef COORDSLIST::Columns Columns;
+	typedef CoordinateListBase< CoordinateListSort<COORDSLIST, SORTFUNC>> Base;
+	typedef COORDSLIST CoordsList;
+	typedef SORTFUNC SortFunction;
+	typedef CoordsList::ListMatrix ListMatrix;
+
+private:
+	const CoordsList &list;
+	ListMatrix coords;
+
+	SortFunction sort_function;
+
+protected:
+	inline std::function<bool(VectorXi::Index, VectorXi::Index)> get_indices_sorting_function() const
+	{
+		coords = list.coordinatematrix();
+
+		return[&](VectorXi::Index i, VectorXi::Index j) {
+			return sort_function(coords.row(i), coords.row(j));
+		};
+	}
+
+public:
+	const long &size() const
+	{
+		return list.size();
+	}
+
+	virtual inline ListMatrix coordinatematrix() const
+	{
+		const long rows = list.size();
+		VectorXi indices = VectorXi::LinSpaced(Sequential, 0, rows, 1);
+
+		std::sort(indices.data(), indices.data() + rows, get_indices_sorting_function());
+
+		ListMatrix result(rows, Columns);
+
+		for (long i = 0; i < size; i++)
+		{
+			result.row(i) = coords.row(indices[i]);
+		}
+
+		return result;
+	}
+
+	virtual inline CoordinateList<Scalar, Columns> coordinatelist() const
+	{
+		return CoordinateList<Scalar, Columns>(coordinatematrix());
+	}
+
+public:
+	CoordinateListSort(const COORDSLIST &list, const SortFunction &func) :
+		list(list),
+		sort_function(func)
+	{ }
+};
+
+template<typename COORDSLIST, typename SORTFUNC>
+CoordinateListSort<COORDSLIST, SORTFUNC> sort(const COORDSLIST &list, const SORTFUNC &func)
+{
+	return CoordinateListSort<COORDSLIST, SORTFUNC>(list, func);
 }
 
 }
