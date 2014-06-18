@@ -119,6 +119,8 @@ public:
 	typedef CoordinateListBase< CoordinateListMerge<COORDSLIST>> Base;
 	typedef COORDSLIST CoordsList;
 	typedef CoordsList::ListMatrix ListMatrix;
+	typedef typename ListMatrix::RowXpr CoordinateRow;
+	typedef typename ListMatrix::ConstRowXpr ConstCoordinateRow;
 
 private:
 	std::vector<const CoordsList *> mergelist;
@@ -241,6 +243,30 @@ public:
 	{
 		mergelist[i] = l;
 	}
+
+	ConstCoordinateRow operator [] (long i) const
+	{
+		long l = 0;
+		while (l < mergelist.size() && i >= mergelist[l]->size())
+		{
+			i -= mergelist[l]->size();
+			l++;
+		}
+
+		return (*mergelist[l])[i];
+	}
+
+	CoordinateRow operator [] (long i)
+	{
+		long l = 0;
+		while (l < mergelist.size() && i >= mergelist[l]->size())
+		{
+			i -= mergelist[l]->size();
+			l++;
+		}
+
+		return (*mergelist[l])[i];
+	}
 };
 
 template<typename COORDSLIST>
@@ -277,6 +303,8 @@ public:
 	typedef CoordinateListBase< CoordinateListRepeat<COORDSLIST>> Base;
 	typedef COORDSLIST CoordsList;
 	typedef CoordsList::ListMatrix ListMatrix;
+	typedef typename ListMatrix::RowXpr CoordinateRow;
+	typedef typename ListMatrix::ConstRowXpr ConstCoordinateRow;
 
 private:
 	const CoordsList &list;
@@ -396,6 +424,16 @@ public:
 		list(l),
 		displacementlist(makedisplacements(vectors, repeats))
 	{ }
+
+	ConstCoordinateRow operator [] (const long &i) const
+	{
+		return list[i % list.size()] + displacementlist.row(i / list.size());
+	}
+
+	CoordinateRow operator [] (const long &i)
+	{
+		return list[i % list.size()] + displacementlist.row(i / list.size());
+	}
 };
 
 template<typename COORDSLIST>
@@ -478,12 +516,119 @@ public:
 		list(list),
 		sort_function(func)
 	{ }
+
+	ConstCoordinateRow operator [] (const long &i) const
+	{
+		const long rows = list.size();
+		VectorXi indices = VectorXi::LinSpaced(Sequential, 0, rows, 1);
+
+		std::sort(indices.data(), indices.data() + rows, get_indices_sorting_function());
+
+		return list[indices[i]];
+	}
+
+	CoordinateRow operator [] (const long &i)
+	{
+		const long rows = list.size();
+		VectorXi indices = VectorXi::LinSpaced(Sequential, 0, rows, 1);
+
+		std::sort(indices.data(), indices.data() + rows, get_indices_sorting_function());
+
+		return list[indices[i]];
+	}
 };
 
 template<typename COORDSLIST, typename SORTFUNC>
 CoordinateListSort<COORDSLIST, SORTFUNC> sort(const COORDSLIST &list, const SORTFUNC &func)
 {
 	return CoordinateListSort<COORDSLIST, SORTFUNC>(list, func);
+}
+
+#include "Field"
+
+template<typename COORDSLIST, typename GRIDFUNC>
+Field<COORDSLIST::Scalar, 1> grid1D(const COORDSLIST &list, const GRIDFUNC &func, long reserve_count = 10)
+{
+	const long size = list.size();
+
+	Matrix<COORDSLIST::Scalar, 1, Dynamic> gridpoints(2, size);
+
+	for (long i = 0; i < size; i++)
+		gridpoints.row(i) = func(list[i]);
+
+	const long N = gridpoints.col(0).max();
+
+	Field<COORDSLIST::Scalar, 1> result(N);
+
+	for (long i = 0; i < size; i++)
+	{
+		Field<COORDSLIST::Scalar, 1>::ScalarVector &gridlocation = result.at(gridpoints(i, 0));
+
+		if (gridlocation.size() == gridlocation.capacity())
+			gridlocation.reserve(gridlocation.capacity() + reserve_count);
+
+		gridlocation.append(i);
+	}
+
+	return result;
+}
+
+template<typename COORDSLIST, typename GRIDFUNC>
+Field<COORDSLIST::Scalar, 2> grid2D(const COORDSLIST &list, const GRIDFUNC &func, long reserve_count = 10)
+{
+	const long size = list.size();
+
+	Matrix<COORDSLIST::Scalar, 2, Dynamic> gridpoints(2, size);
+
+	for (long i = 0; i < size; i++)
+		gridpoints.row(i) = func(list[i]);
+
+	const long N = gridpoints.col(0).max();
+	const long M = gridpoints.col(1).max();
+
+	Field<COORDSLIST::Scalar, 2> result(N, M);
+
+	for (long i = 0; i < size; i++)
+	{
+		Field<COORDSLIST::Scalar, 2>::ScalarVector &gridlocation = result.at(gridpoints(i, 0), gridpoints(i, 1));
+
+		if (gridlocation.size() == gridlocation.capacity())
+			gridlocation.reserve(gridlocation.capacity() + reserve_count);
+
+		gridlocation.append(i);
+	}
+
+	return result;
+}
+
+
+template<typename COORDSLIST, typename GRIDFUNC>
+Field<COORDSLIST::Scalar, 3> grid3D(const COORDSLIST &list, const GRIDFUNC &func, long reserve_count = 10)
+{
+	const long size = list.size();
+
+	Matrix<COORDSLIST::Scalar, 3, Dynamic> gridpoints(2, size);
+
+	for (long i = 0; i < size; i++)
+		gridpoints.row(i) = func(list[i]);
+
+	const long N = gridpoints.col(0).max();
+	const long M = gridpoints.col(1).max();
+	const long P = gridpoints.col(2).max();
+
+	Field<COORDSLIST::Scalar, 3> result(N, M, P);
+
+	for (long i = 0; i < size; i++)
+	{
+		Field<COORDSLIST::Scalar, 3>::ScalarVector &gridlocation = result.at(gridpoints(i, 0), gridpoints(i, 1), gridpoints(i, 2));
+
+		if (gridlocation.size() == gridlocation.capacity())
+			gridlocation.reserve(gridlocation.capacity() + reserve_count);
+
+		gridlocation.append(i);
+	}
+
+	return result;
 }
 
 }
