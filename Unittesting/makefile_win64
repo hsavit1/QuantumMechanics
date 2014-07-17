@@ -22,10 +22,6 @@ LFLAGS =
 # define any directories containing header files other than /usr/include
 INCLUDES = -I../ -I../include/ 
 
-# define the C source files
-SRCS = GreensFormalismUnittesting.cpp \
-	EigensystemUnittesting.cpp
-
 #
 # The following part of the makefile is generic; it can be used to 
 # build any executable just by changing the definitions above and by

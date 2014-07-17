@@ -1,0 +1,4 @@
+CircularBufferUnitTesting.obj: CircularBufferUnitTesting.cpp
+CircularBufferUnitTesting.obj: M:\Code\Libraries\QuantumMechanics\Unittesting\CircularBufferUnitTesting.hpp
+CircularBufferUnitTesting.obj: ../Misc/circularbuffer.hpp
+CircularBufferUnitTesting.obj: ../Misc/parallelfor.hpp
