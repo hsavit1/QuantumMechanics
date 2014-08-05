@@ -10,8 +10,8 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 #ifndef _GREENSFORMALISM_CHAINSOLVER_H_
 #define _GREENSFORMALISM_CHAINSOLVER_H_
 
-#include "Math/Dense"
-#include "Misc/LoggingObject"
+#include <Math/Dense>
+#include "../misc/LoggingObject"
 
 namespace QuantumMechanics {
 

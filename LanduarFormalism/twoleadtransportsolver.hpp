@@ -10,10 +10,10 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 #ifndef _LANDUARFORMALISM_TWOLEADTRANSPORTSOLVER_H_
 #define _LANDUARFORMALISM_TWOLEADTRANSPORTSOLVER_H_
 
-#include "Misc/LoggingObject"
+#include "../misc/LoggingObject"
 
-#include "GreensFormalism/GreensSolver"
-#include "GreensFormalism/ChainSolver"
+#include "../GreensFormalism/GreensSolver"
+#include "../GreensFormalism/ChainSolver"
 
 namespace QuantumMechanics {
 

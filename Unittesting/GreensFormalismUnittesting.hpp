@@ -2,9 +2,9 @@
 #ifndef GREENSFORMALISM_UNITTESTING_H_
 #define GREENSFORMALISM_UNITTESTING_H_
 
-#include <GreensFormalism/GreensSolver>
-#include <GreensFormalism/ChainSolver>
-#include <LanduarFormalism/TwoLeadTransportSolver>
+#include <QuantumMechanics/GreensFormalism/GreensSolver>
+#include <QuantumMechanics/GreensFormalism/ChainSolver>
+#include <QuantumMechanics/LanduarFormalism/TwoLeadTransportSolver>
 
 namespace QuantumMechanics {
 

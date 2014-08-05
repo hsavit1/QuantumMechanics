@@ -1,0 +1,61 @@
+#
+# The intel compiler for the linux platform.
+#
+
+# define the C compiler to use
+CC = icpc
+
+# define any compile-time flags
+ALL_CFLAGS = $(CFLAGS:%=-%) $(LINUX_CFLAGS)
+
+# define library paths in addition to standard
+ALL_LPATHS = $(LPATHS:%=-L%) $(LINUX_LPATHS)
+
+# define any libraries to link into executable:
+ALL_LIBS = $(LIBS:%=-%) $(LINUX_LIBS)
+
+# define any directories containing header files other than standard
+ALL_INCLUDES = $(INCLUDES:%=-I%) $(LINUX_INCLUDES)
+
+# define the executable files 
+FINAL_MAIN = $(MAIN:%=%Executable)
+
+#
+# The following part of the makefile is generic; it can be used to 
+# build any executable just by changing the definitions above and by
+# deleting dependencies appended to the file from 'make depend'
+#
+
+# Object and dependency files/dir definition:
+DEPDIR = .deps_linux64
+DEPEXT = dep
+OBJDIR = .objs_linux64
+OBJEXT = o
+
+DEPS = $(SRCS:%.cpp=$(DEPDIR)/%.$(DEPEXT))
+OBJS = $(SRCS:%.cpp=$(OBJDIR)/%.$(OBJEXT))
+
+.PHONY: clean
+
+all:    $(FINAL_MAIN)
+	@echo  Executable \'$(FINAL_MAIN)\' has been compiled.
+
+$(FINAL_MAIN): $(OBJS)
+	$(CC) $(ALL_CFLAGS) $(ALL_INCLUDES) $(ALL_LIBS) $(ALL_LPATHS) -o $@ $<
+
+
+$(OBJS): $(SRCS) $(OBJDIR) $(DEPDIR) makefile
+	$(CC) $(ALL_CFLAGS) $(ALL_INCLUDES) $(ALL_LIBS) $(ALL_LPATHS) -MMD -MP -MF$(<:%.cpp=$(DEPDIR)/%.$(DEPEXT)) -c -o $@ $<
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(DEPDIR):
+	@mkdir -p $(DEPDIR)
+
+clean:
+	$(RM) *~ *.bak $(OBJS) $(DEPS) $(MAIN)
+	@rmdir $(OBJDIR) $(DEPDIR)
+
+
+-include $(SRCS:%.cpp=$(DEPDIR)/%.$(DEPEXT))
