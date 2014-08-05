@@ -1,8 +1,10 @@
 /*
 Header file for QuantumMechanics::CircularBuffer:
 
-This file solves a list of one or more matrices stored in a c-style array, stl-style vector,
-or a return from a function(int). When not using vector (or a single matrix) the
+This file declares and defines the circular buffer (ring buffer).
+The particular implementation is mostly! lock-free multi-producer-multi-consumer atomic buffer.
+
+By mostly, we mean that reads (writes) try to lock in a reserved space, which is not nessecarily immediate.
 
 ---
 Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
@@ -12,25 +14,31 @@ Copyright (C) 2014, Søren Schou Gregersen <sorge@nanotech.dtu.dk>
 #define _CIRCULARBUFFER_H_
 
 #include <algorithm> // for std::min
-#include <atomic>
-#include <memory> // unique_ptr
-#include <sstream> // for std::sstream
+#include <atomic> // for std::atomic
+#include <memory> // for std::unique_ptr
+#include <iostream> // for std::cout
 
 template <size_t Capacity>
 class CircularBuffer
 {
 private:
-	std::atomic<size_t> head, tail, reserved_read, reserved_write;
-	static const size_t data_capacity = Capacity;
-	std::unique_ptr<char[]> data;
+	// enum to declare space available for read/write or either just written or just read.
+	// - This is needed to update newly written/read sectors that can't immidiately be declared available.
+	enum class SpaceState {
+		Neutral,
+		RecentlyWritten,
+		RecentlyRead
+	};
 
-	std::atomic<bool> lock; // Low-level spin-lock
-	std::atomic<bool> corrupt_lock; // Low-level lock
+	std::atomic<size_t> head, tail, reserved_read, reserved_write; // position identifiers
+	static const size_t data_capacity = Capacity; // Constant size
+	std::unique_ptr<unsigned char[]> data; // The storage space
+	std::unique_ptr<SpaceState[]> spaces; // The declaration space for inbetween simultanous read/writes.
 	
 public:
+	// Instantanious information 
 	size_t capacity() const { return data_capacity; }
 
-	// Instantanious information 
 	// - note that it not not be correct if either writing or reading is being processed
 	size_t size() const 
 	{ 
@@ -43,62 +51,56 @@ public:
 	CircularBuffer() : 
 		head(0), tail(0), reserved_read(0), reserved_write(0),
 		data(new char[data_capacity]),
-		lock(false),
-		corrupt_lock(false)
-	{ }
+		spaces(new SpaceState[data_capacity])
+	{
+		for (auto& space : (SpaceState(*)[data_capacity]) spaces)
+			space = SpaceState::Neutral;
+	}
 
 	// Default destructor
 	virtual ~CircularBuffer() 
 	{ };
 
 	// Copy constructor
+	// - note that lock-free means no protection against simultanious reading or writing.
 	CircularBuffer(const CircularBuffer& copy) :
 		data(new char[data_capacity]),
-		lock(false),
-		corrupt_lock(false)
+		spaces(new SpaceState[data_capacity])
 	{
-		copy.lock = true;
 		head = copy.head;
 		tail = copy.tail;
 		reserved_read = copy.reserved_read;
 		reserved_write = copy.reserved_write;
-		corrupt_lock = copy.corrupt_lock;
 		std::copy(copy.data.get(), copy.data.get() + data_capacity, data.get());
-		copy.lock = false;
+		std::copy(copy.spaces.get(), copy.spaces.get() + data_capacity, spaces.get());
 	}
 
 	// Copy assignment operator
+	// - note that lock-free means no protection against simultanious reading or writing.
 	CircularBuffer& operator=(const CircularBuffer& copy)
 	{
 		if (this != &copy)
 		{
-
-			lock = true;
-			copy.lock = true;
 			head = copy.head;
 			tail = copy.tail;
 			reserved_read = copy.reserved_read;
 			reserved_write = copy.reserved_write;
-			corrupt_lock = copy.corrupt_lock;
 			std::copy(copy.data.get(), copy.data.get() + data_capacity, data.get());
-			lock = false;
-			copy.lock = false;
+			std::copy(copy.spaces.get(), copy.spaces.get() + data_capacity, spaces.get());
 		}
 
 		return *this;
 	}
 	
 	// Move constructor
-	CircularBuffer(CircularBuffer&& temp) :
-		lock(false),
-		corrupt_lock(false)
+	CircularBuffer(CircularBuffer&& temp)
 	{
 		head = std::move(temp.head);
 		tail = std::move(temp.tail);
 		reserved_read = std::move(temp.reserved_read);
 		reserved_write = std::move(temp.reserved_write);
-		corrupt_lock = copy.corrupt_lock;
 		data = std::move(temp.data);
+		spaces = std::move(temp.spaces);
 	}
 
 	// Move assignment operator
@@ -106,191 +108,165 @@ public:
 	{
 		if (this != &copy)
 		{
-			lock = true;
 			head = std::move(temp.head);
 			tail = std::move(temp.tail);
 			reserved_read = std::move(temp.reserved_read);
 			reserved_write = std::move(temp.reserved_write);
-			corrupt_lock = temp.corrupt_lock;
 			data = std::move(temp.data);
-			lock = false;
+			spaces = std::move(temp.spaces);
 		}
 
 		return *this;
 	}
 
+protected:
+	// Helper function
+	// - find the position accounting for ring buffer wrap.
 	inline static size_t increment(size_t position, size_t bytes)
 	{
-		if (corrupt_lock) return 0;
 		return (size_position + bytes) % data_capacity;
 	}
 
+	// Helper function
+	// - find the distance accounting for ring buffer wrap (along positive direction).
 	inline static size_t distance(size_t position_1, size_t position_2)
 	{
-		if (corrupt_lock) return 0;
 		return (position_2 > position_1) % position_2 - position_1 : data_capacity + position_1 - position_2;
 	}
 
-	// Reserve functions
-	// - Note these try to write as soon as possible, blocking until done.
-	void reserve_write(size_t &write_tail, size_t bytes)
+public:
+	// Read/write functions
+	// - Note these try to reserve space, atomically determining if there is space and reserving.
+	// - If the space becomes reserved the read/write happens afterwards. Unfortunately, the function blocks until it can unreserve the space again. Returns true on success.
+	// - If there is no space found, it return false.
+	bool write(const unsigned char *write_data, size_t bytes)
 	{
-		if (bytes == 0) return true;
-
-		if (corrupt_lock) return false;
+		if (bytes == 0) return true; // No need.
 
 		// The writable boundaries (writable from tail to head).
 		size_t c_head = reserved_read;
 		size_t c_tail = reserved_write;
-		size_t dist = distance(c_tail, c_head);
 
-		// Make sure there is room right now, ohterwise wait and update.
-		while ((dist = distance(c_tail, c_head), dist) > bytes && (c_head = reserved_read, c_tail = reserved_write, true))
+		// Make sure there is room right now, ohterwise return failed.
+		do
 		{
-			if (corrupt_lock) return;
-		}
+			c_head = reserved_read; // update the head (in case there is more room).
+			size_t dist = distance(c_tail, c_head);
+			// note the head might have changed already, leaving more room. We disregard this situation.
 
-		while (
-			// Spin-lock until we reserve space at the reserve head.
-			!reserved_write.atomic_compare_exchange_weak(c_tail, increment(c_tail, bytes)) &&
-			// Check whether the space avalible is big enough, if not renew both head and tail!
-			((dist = distance(c_tail, c_head), dist) > bytes && (c_head = reserved_read, c_tail = reserved_write, true))
-			)
-		{
-			if (corrupt_lock) return;
-
-			if (dist <= bytes)
+			if (dist < bytes) // No room for the data.
 			{
-				corrupt_lock = true;
-				std::cout << "Warning: circular buffer accedently found insurficient writable space. Will set the space as available and wait for more room. If no reads are made e.g. all threads are trying to write the program will loop indefinitely.\nSeriously consider increasing the size of the buffer!\n";
+				std::cout << "A circular buffer has become full.\n As this slows everything, seriously consider making the capacity larger!" << std::endl;
+				return false;
 			}
-		}
+
+		} while (!reserved_write.atomic_compare_exchange_weak(c_tail, increment(c_tail, bytes)));
+		// if the tail can be locked, it is incremented. Note the distance is already tested and approved.
+		// This is the only spin-lock used, and it should not last that long.
 
 		// If this point is reached, the buffer succeded in reserving space.
-		write_tail = c_tail;
+
+		// Write in a single step
+		if (bytes <= data_capacity - c_tail)
+		{
+			std::copy(write_data, write_data + bytes, data.get() + c_tail);
+
+			for (size_t i = c_tail; i < c_tail + bytes; i++)
+				spaces[i] = SpaceState::RecentlyWritten;
+		}
+		// Write in two steps
+		else
+		{
+			size_t size_1 = data_capacity - c_tail;
+			std::copy(write_data, write_data + size_1, data.get() + c_tail);
+			for (size_t i = c_tail; i < c_tail + size_1; i++)
+				spaces[i] = SpaceState::RecentlyWritten;
+			std::copy(write_data + size_1, write_data + bytes, data.get());
+			for (size_t i = 0; i < bytes - size_1; i++)
+				spaces[i] = SpaceState::RecentlyWritten;
+		}
+
+		// Now, if this write is not the first write after head, we do nothing.
+		if (head != c_tail) return true;
+
+		// Otherwise, we would like to declare this space ready for read.
+		// - Note that all other treads exit as they are not at the head, so it will remain c_tail until this thread changes it.
+
+		size_t new_head = head;
+
+		while (spaces[new_head] == SpaceState::RecentlyWritten) // For each written space (also from other writes)...
+		{
+			spaces[new_head] = SpaceState::Neutral; // Declare it neutral (not recently written or read).
+			new_head = increment(new_head, 1); // Increment the new head.
+		}
+
+		// Now we update the readable head.
+		head = new_head;
 
 		return true;
 	}
-	bool reserve_read(size_t &read_tail, size_t bytes)
+	bool read(unsigned char *read_data, size_t bytes)
 	{
-		if (bytes == 0) return true;
-
-		if (corrupt_lock) return false;
+		if (bytes == 0) return true; // No need.
 
 		// The readable boundaries (readable from tail to head).
 		size_t c_head = head;
 		size_t c_tail = tail;
-		size_t dist = distance(c_tail, c_head);
 
-		// Make sure there is room right now, ohterwise wait and update.
-		while ((dist = distance(c_tail, c_head), dist) > bytes && (c_head = head, c_tail = tail, true))
+		// Make sure there is data right now, ohterwise return failed.
+		do
 		{
-			if (corrupt_lock) return;
-		}
+			c_head = head; // update the head (in case there is more data now).
+			size_t dist = distance(c_tail, c_head);
+			// note the head might have changed already, leaving more data. We disregard this situation.
 
-		while (
-			// Spin-lock until we reserve space at the reserve head.
-			!tail.atomic_compare_exchange_weak(c_tail, increment(c_tail, bytes)) &&
-			// Check whether the space avalible is big enough, if not renew both head and tail!
-			((dist = distance(c_tail, c_head), dist) > bytes && (c_head = head, c_tail = tail, true))
-			)
-		{
-			if (dist <= bytes)
+			if (dist < bytes) // Not enough data.
 			{
-				corrupt_lock = true;
-				std::cout << "Major error: circular buffer accedently found insurficient readable space. All memory is now corrupt.\nSeriously consider increasing the size of the buffer!\n";
+				std::cout << "A circular buffer has been asked to supply more data than it can at the moment.\n This may be on purpose, however this is usually not the case." << std::endl;
+				return false;
 			}
-		}
 
+		} while (!tail.atomic_compare_exchange_weak(c_tail, increment(c_tail, bytes))); 
+		// if the tail can be locked, it is incremented. Note the distance is already tested and approved.
+		// This is the only spin-lock used, and it should not last that long.
+			
 		// If this point is reached the buffer succeded in reserving space.
-		read_tail = c_tail;
-
-		return true;
-	}
-
-	// Read/write functions - returns true for success
-	// - Note these try to write as soon as possible, blocking until done.
-	bool write(const char *write_data, size_t write_tail, size_t bytes)
-	{
-		if (bytes == 0) return;
-
-		if (corrupt_lock) return false;
-
-		// The reserved writable boundaries (writable from tail to head).
-		size_t c_head = reserved_write;
-		size_t c_tail = head;
-		size_t dist = distance(c_tail, c_head);
-
-		if (dist < bytes)
-		{
-			std::cout "Major error: the circular buffer is attempting to write more than is reserved for writing. This should not happen if the space has been reserved previously.\nMake sure you have reserved this space. Will not write and return failed.";
-			return false;
-		}
-
-		if (distance(c_tail, write_tail) > dist)
-		{
-			std::cout "Major error: the circular buffer is attempting to write on unreserved space. This should not happen if the space has been reserved previously.\nMake sure you have reserved this space. Will not write and return failed.";
-			return false;
-		}
 
 		// Write in a single step
-		if (bytes <= data_capacity - write_tail)
+		if (bytes <= data_capacity - c_tail)
 		{
-			std::copy(write_data, write_data + bytes, data.get() + write_tail);
+			std::copy(data.get() + c_tail, data.get() + c_tail + bytes, read_data);
+			for (size_t i = c_tail; i < c_tail + bytes; i++)
+				spaces[i] = SpaceState::RecentlyRead;
 		}
 		// Write in two steps
 		else
 		{
-			size_t size_1 = data_capacity - write_tail;
-			std::copy(write_data, write_data + size_1, data.get() + write_tail);
-			std::copy(write_data + size_1, write_data + bytes, data.get());
+			size_t size_1 = data_capacity - c_tail;
+			std::copy(data.get() + c_tail, data.get() + c_tail + size_1, read_data);
+			for (size_t i = c_tail; i < c_tail + size_1; i++)
+				spaces[i] = SpaceState::RecentlyRead;
+			std::copy(data.get(), data.get() + bytes - size_1, read_data + size_1);
+			for (size_t i = 0; i < bytes - size_1; i++)
+				spaces[i] = SpaceState::RecentlyRead;
 		}
 
-		// Now we update the readable head.
-		while (head != write_tail && !corrupt_lock);
-		head += bytes;
+		// Now, if this read is not the first read after free space, we do nothing.
+		if (reserved_read != c_tail) return true;
 
-		return true;
-	}
-	bool read(char *read_data, size_t read_tail, size_t bytes)
-	{
-		if (bytes == 0) return;
+		// Otherwise, we would like to declare this space ready for write.
+		// - Note that all other treads exit as they are not at the head, so it will remain c_tail until this thread changes it.
 
-		if (corrupt_lock) return false;
+		size_t new_head = reserved_read;
 
-		// The reserved writable boundaries (writable from tail to head).
-		size_t c_head = tail;
-		size_t c_tail = reserved_read;
-		size_t dist = distance(c_tail, c_head);
-
-		if (dist < bytes)
+		while (spaces[new_head] == SpaceState::RecentlyRead) // For each read space (also from other reads)...
 		{
-			std::cout "Major error: the circular buffer is attempting to write more than is reserved for writing. This should not happen if the space has been reserved previously.\nMake sure you have reserved this space. Will not write and return failed.";
-			return false;
-		}
-
-		if (distance(c_tail, read_tail) > dist)
-		{
-			std::cout "Major error: the circular buffer is attempting to write on unreserved space. This should not happen if the space has been reserved previously.\nMake sure you have reserved this space. Will not write and return failed.";
-			return false;
-		}
-
-		// Write in a single step
-		if (bytes <= data_capacity - read_tail)
-		{
-			std::copy(data.get() + read_tail, data.get() + read_tail + bytes, read_tail);
-		}
-		// Write in two steps
-		else
-		{
-			size_t size_1 = data_capacity - read_tail;
-			std::copy(data.get() + read_tail, data.get() + read_tail + size_1, read_tail);
-			std::copy(data.get(), data.get() + bytes - size_1, read_tail + size_1);
+			spaces[new_head] = SpaceState::Neutral; // Declare it neutral (not recently written or read).
+			new_head = increment(new_head, 1); // Increment the new head.
 		}
 
 		// Now we update the writeable head.
-		while (reserved_read != read_tail && !corrupt_lock);
-		reserved_read += bytes;
+		reserved_read = new_head;
 
 		return true;
 	}
