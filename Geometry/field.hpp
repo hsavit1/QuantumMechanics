@@ -16,6 +16,7 @@ namespace QuantumMechanics {
 
 namespace Geometry {
 	
+/*
 template<typename SCALAR, long DIMENSIONS>
 class Field {
 
@@ -57,6 +58,7 @@ public:
 		std::fill(base.begin(), base.end(), ScalarVector());
 	}
 };
+*/
 
 template<typename SCALAR>
 class Field<SCALAR, 1>{
@@ -65,14 +67,14 @@ class Field<SCALAR, 1>{
 	typedef 1 Dimensions;
 	typedef std::vector<Scalar> ScalarVector;
 	typedef std::vector< ScalarVector > FieldBase;
-	typedef Matrix<MatrixXi::Index, Dimensions, 1> VectorDi;
+	typedef Vector1i DimensionVector;
 
 private:
 	FieldBase base;
-	VectorDi base_dimensions;
+	DimensionVector base_dimensions;
 
 public:
-	inline const VectorDi &dimensions() const
+	inline const DimensionVector &dimensions() const
 	{
 		return base_dimensions;
 	}
@@ -112,7 +114,7 @@ public:
 	inline void resize(const long &d1)
 	{
 		base.resize(d1);
-		base_dimensions = VectorDi(d1);
+		base_dimensions = DimensionVector(d1);
 	}
 
 	inline void setEmpty()
@@ -128,14 +130,14 @@ class Field<SCALAR, 2>{
 	typedef 2 Dimensions;
 	typedef std::vector<Scalar> ScalarVector;
 	typedef std::vector< ScalarVector > FieldBase;
-	typedef Matrix<MatrixXi::Index, Dimensions, 1> VectorDi;
+	typedef Vector2i DimensionVector;
 
 private:
 	FieldBase base;
-	VectorDi base_dimensions;
+	DimensionVector base_dimensions;
 
 public:
-	inline const VectorDi &dimensions() const
+	inline const DimensionVector &dimensions() const
 	{
 		return base_dimensions;
 	}
@@ -175,7 +177,7 @@ public:
 	inline void resize(const long &d1, const long &d2)
 	{
 		base.resize(d1 * d2);
-		base_dimensions = VectorDi(d1, d2);
+		base_dimensions = DimensionVector(d1, d2);
 	}
 
 	inline void setEmpty()
@@ -191,14 +193,14 @@ class Field<SCALAR, 3>{
 	typedef 3 Dimensions;
 	typedef std::vector<Scalar> ScalarVector;
 	typedef std::vector< ScalarVector > FieldBase;
-	typedef Matrix<MatrixXi::Index, Dimensions, 1> VectorDi;
+	typedef Vector3i DimensionVector;
 
 private:
 	FieldBase base;
-	VectorDi base_dimensions;
+	DimensionVector base_dimensions;
 
 public:
-	inline const VectorDi &dimensions() const
+	inline const DimensionVector &dimensions() const
 	{
 		return base_dimensions;
 	}
@@ -238,7 +240,7 @@ public:
 	inline void resize(const long &d1, const long &d2, const long &d3)
 	{
 		base.resize(d1 * d2 * d3);
-		base_dimensions = VectorDi(d1, d2, d3);
+		base_dimensions = DimensionVector(d1, d2, d3);
 	}
 
 	inline void setEmpty()
